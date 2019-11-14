@@ -7,7 +7,8 @@ USERNAME = pwd.getpwuid(os.getuid())[0]
 
 MASTER_ADDRESS = 'http://127.0.0.1:5000'
 KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
-CUR_DIR = os.getcwd()
+LOCAL_STORAGE = os.getcwd() + "/storage"
+SERVER_STORAGE = '/home/ubuntu'
 
 
 def init():
@@ -17,21 +18,39 @@ def init():
 def create(name):
     datanode = requests.get(f"{MASTER_ADDRESS}/create/{name}").text
     print("Datanode:", datanode)
-    temp_file = open(name, "w")
+    temp_file = open(f"{LOCAL_STORAGE}/{name}", "w")
+    print(os.listdir(LOCAL_STORAGE))
     con = Connection(host=datanode,
                      user="ubuntu",
                      connect_kwargs={"key_filename": KEY_LOCATION}
                      )
-    con.put(f"{CUR_DIR}/{name}", "/home/ubuntu")
-    os.remove(name)
 
-
-def read(name):
-    print("This is mock function")
+    con.put(f"{LOCAL_STORAGE}/{name}", SERVER_STORAGE)
+    os.remove(f"{LOCAL_STORAGE}/{name}")
 
 
 def write(name):
-    print("This is mock function")
+    if name not in os.listdir(LOCAL_STORAGE):
+        print(f"No such file `{name}`")
+        return
+
+    datanode = requests.get(f"{MASTER_ADDRESS}/write/{name}").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+    con.put(f"{LOCAL_STORAGE}/{name}", SERVER_STORAGE)
+
+
+def read(name):
+    datanode = requests.get(f"{MASTER_ADDRESS}/read/{name}").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+    con.get(f"{SERVER_STORAGE}/{name}", f"{LOCAL_STORAGE}/{name}")
 
 
 def delete(name):
@@ -112,7 +131,7 @@ def main():
         else:
             func, args = functions[command]
             func(args)
-        print(f"DONE: `{' '.join(s)}`")
+        print(f"DONE: `{' '.join(s)}`\n")
 
 
 main()

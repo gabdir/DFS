@@ -1,13 +1,3 @@
-import requests
-import pwd
-import os
-from fabric import Connection
-
-USERNAME = pwd.getpwuid(os.getuid())[0]
-
-MASTER_ADDRESS = 'http://127.0.0.1:5000'
-KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
-CUR_DIR = os.getcwd()
 
 
 def init():
@@ -15,16 +5,7 @@ def init():
 
 
 def create(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/create/{name}").text
-    print(f"{MASTER_ADDRESS}/create/{name}")
-    print(datanode)
-    temp_file = open(name, "w")
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    con.put(f"{CUR_DIR}/{name}", "/home/ubuntu")
-    os.remove(name)
+    print("This is mock function")
 
 
 def read(name):
@@ -87,8 +68,8 @@ def main():
     while True:
         s = input().split()
         command = s[0]
-        name = "" if len(s) <= 1 else s[1]
-        new_loc = "" if len(s) <= 2 else s[2]
+        name = "" if len(s) < 1 else s[1]
+        new_loc = "" if len(s) < 2 else s[2]
 
         functions = {
             "init": (init,),
@@ -106,15 +87,12 @@ def main():
         }
 
         if command == "q":
-            print("Qiting")
             return
         elif command not in functions:
             print("Command not found. Try again")
         else:
             func, args = functions[command]
-            print(func, args)
-            func(args)
-        print(f"DONE: `{' '.join(s)}`")
+            func(*args)
 
 
 main()

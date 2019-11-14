@@ -16,8 +16,7 @@ def init():
 
 def create(name):
     datanode = requests.get(f"{MASTER_ADDRESS}/create/{name}").text
-    print(f"{MASTER_ADDRESS}/create/{name}")
-    print(datanode)
+    print("Datanode:", datanode)
     temp_file = open(name, "w")
     con = Connection(host=datanode,
                      user="ubuntu",
@@ -112,7 +111,6 @@ def main():
             print("Command not found. Try again")
         else:
             func, args = functions[command]
-            print(func, args)
             func(args)
         print(f"DONE: `{' '.join(s)}`")
 

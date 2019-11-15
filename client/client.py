@@ -2,6 +2,7 @@ import requests
 import pwd
 import os
 from fabric import Connection
+from patchwork.files import exists
 
 USERNAME = pwd.getpwuid(os.getuid())[0]
 
@@ -24,7 +25,6 @@ def create(name):
                      user="ubuntu",
                      connect_kwargs={"key_filename": KEY_LOCATION}
                      )
-
     con.put(f"{LOCAL_STORAGE}/{name}", SERVER_STORAGE)
     os.remove(f"{LOCAL_STORAGE}/{name}")
 
@@ -54,19 +54,72 @@ def read(name):
 
 
 def delete(name):
-    print("This is mock function")
+    datanode = requests.get(f"{MASTER_ADDRESS}/delete/{name}").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+
+    if exists(con, f"{SERVER_STORAGE}/{name}"):
+        if exists(con, f"{SERVER_STORAGE}/{name}/"):
+            print(f"No such file {name}")
+        else:
+            con.run(f"rm {SERVER_STORAGE}/{name}")
+    else:
+        print(f"No such file {name}")
 
 
 def info(name):
-    print("This is mock function")
+    datanode = requests.get(f"{MASTER_ADDRESS}/info/{name}").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+    if exists(con, f"{SERVER_STORAGE}/{name}"):
+        if exists(con, f"{SERVER_STORAGE}/{name}/"):
+            print(f"No such file {name}")
+        else:
+            con.run(f"stat {SERVER_STORAGE}/{name}")
+    else:
+        print(f"No such file {name}")
 
 
 def copy(name, new_loc):
-    print("This is mock function")
+    datanode = requests.get(f"{MASTER_ADDRESS}/copy/{name}").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+
+    if exists(con, f"{SERVER_STORAGE}/{name}"):
+        if exists(con, f"{SERVER_STORAGE}/{name}/"):
+            print(f"No such file {name}")
+        else:
+            con.run(f"cp -b {SERVER_STORAGE}/{name} {SERVER_STORAGE}/{new_loc}/")
+    else:
+        print(f"No such file {name}")
 
 
 def move(name, new_loc):
-    print("This is mock function")
+    datanode = requests.get(f"{MASTER_ADDRESS}/move/{name}").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+
+    if exists(con, f"{SERVER_STORAGE}/{name}"):
+        if exists(con, f"{SERVER_STORAGE}/{name}/"):
+            print(f"No such file {name}")
+        if exists(con, f"{SERVER_STORAGE}/{new_loc}/"):
+            con.run(f"mv {SERVER_STORAGE}/{name} {SERVER_STORAGE}/{new_loc}/")
+        else:
+            print(f"No such directory {new_loc}")
+    else:
+        print(f"No such file {name}")
 
 
 def diropen(name):
@@ -124,14 +177,16 @@ def main():
         }
 
         if command == "q":
-            print("Qiting")
+            print("Quiting")
             return
         elif command not in functions:
             print("Command not found. Try again")
         else:
             func, args = functions[command]
-            func(args)
+            if len(args) == 2:
+                func(args[0], args[1])
+            else:
+                func(args)
         print(f"DONE: `{' '.join(s)}`\n")
-
 
 main()

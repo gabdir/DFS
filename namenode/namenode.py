@@ -1,7 +1,7 @@
 from flask import Flask
 
 app = Flask(__name__)
-datanode = "ec2-13-59-175-234.us-east-2.compute.amazonaws.com"
+datanode = "ec2-3-134-80-70.us-east-2.compute.amazonaws.com"
 
 
 @app.route('/create/<name>')
@@ -36,6 +36,31 @@ def copy(name):
 
 @app.route('/move/<name>')
 def move(name):
+    return datanode
+
+
+@app.route('/diropen')
+def diropen():
+    return datanode
+
+
+@app.route('/dirmake')
+def dirmake():
+    return datanode
+
+
+@app.route('/dirdel')
+def dirdel():
+    return datanode
+
+
+@app.route('/dirread')
+def dirread():
+    return datanode
+
+
+@app.route('/init')
+def init():
     return datanode
 
 

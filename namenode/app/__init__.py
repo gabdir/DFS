@@ -9,7 +9,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 from . import models, routes
-from .models import Files, Directory
+from .models import File, Directory
 
 
 

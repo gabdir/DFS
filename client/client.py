@@ -183,10 +183,9 @@ def main():
             print("Command not found. Try again")
         else:
             func, args = functions[command]
-            if len(args) == 2:
-                func(args[0], args[1])
-            else:
-                func(args)
+            func(*args)
         print(f"DONE: `{' '.join(s)}`\n")
 
-main()
+#main()
+q = requests.get("http://3.135.224.147/latest/meta-data")
+print(q.text)

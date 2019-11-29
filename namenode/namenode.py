@@ -1,43 +1,82 @@
-from flask import Flask
+import json
+from flask import request, jsonify
+from app import db
+from app import app
+from app.models import File, Directory
+import requests
 
-app = Flask(__name__)
-datanode = "ec2-13-59-175-234.us-east-2.compute.amazonaws.com"
-
-
-@app.route('/create/<name>')
-def create(name):
-    return write(name)
-
-
-@app.route('/write/<name>')
-def write(name):
-    return datanode
+db.create_all()
 
 
-@app.route('/read/<name>')
-def read(name):
-    return datanode
+@app.route('/files', methods=['GET'])
+def fetch():
+    files = File.query.all()
+    all_files = []
+    for file in files:
+        new_file = {
+            "file_path": file.file_path,
+            "name": file.name,
+            "timestamp": file.timestamp
+        }
+        all_files.append(new_file)
+
+    response = {
+        "status": "success",
+        "files": all_files
+    }
+
+    return jsonify(response), 200
 
 
-@app.route('/delete/<name>')
-def delete(name):
-    return datanode
+@app.route('/files', methods=['POST'])
+def get_file(filename):
+    fail_response = {
+        'status': 'fail',
+        'message': 'File does not exist'
+    }
+    try:
+        file_object = File.query.filter_by(name=filename).first()
+        if not file_object:
+            return jsonify(fail_response), 404
+        else:
+            file_object = file_object.to_dict()
+            file_path = file_object['file_path']
+            r = requests.get(f"{file_path}/{filename}")
+            return r.content, r.status_code
+    except ValueError:
+        return jsonify(fail_response), 404
 
 
-@app.route('/info/<name>')
-def info(name):
-    return datanode
+@app.route('/files', methods=['POST'])
+def create_file():
+    if 'user_file' not in request.files:
+        return "No file attached", 400
+    file = request.files["user_file"]
+    # fs = random.choice(file_servers)
+    r = requests.post(f"{fs}/files", files={"user_file": (file.filename, file)})
+    return json.dumps("Added"), 200
 
 
-@app.route('/copy/<name>')
-def copy(name):
-    return datanode
+@app.route('/remove/<file_path>', methods=['DELETE'])
+def remove(file_path):
+    File.query.filter_by(file_path=file_path).delete()
+    db.session.commit()
+    return json.dumps("Deleted"), 200
 
 
-@app.route('/move/<name>')
-def move(name):
-    return datanode
+@app.route('/rename/<file_path>', methods=['PATCH'])
+def rename(file_path):
+    data = request.get_json()
+    new_name = data['name']
+    file_to_update = File.query.filter_by(file_path=file_path).all()[0]
+    file_to_update.name = new_name
+    db.session.commit()
+    return json.dums("Edited"), 200
 
-
-if __name__ == '__main__':
-    app.run()
+f = File("nemaa", 21)
+db.session.add(f)
+db.session.commit()
+fs = File.query.all()
+ds = Directory.query.all()
+print(fs)
+print(ds)

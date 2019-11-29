@@ -1,7 +1,3 @@
-import sys
-import os
-
-sys.path.append(os.getcwd())
 from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
@@ -12,4 +8,12 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-from app import models, routes
+from . import models, routes
+from .models import Files, Directory
+
+
+
+
+
+
+

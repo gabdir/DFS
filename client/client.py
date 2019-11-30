@@ -43,7 +43,7 @@ def write(name):
         print(f"No such file `{name}`")
         return
 
-    datanode = requests.get(f"{MASTER_ADDRESS}/write/{name}").text
+    datanode = requests.get(f"{MASTER_ADDRESS}/write/{name}/").text
     print("Datanode:", datanode)
     con = Connection(host=datanode,
                      user="ubuntu",
@@ -212,8 +212,8 @@ def diropen(name):
         # if CURRENT_DIR[cut + 1::] == "":
         #     print("Already in root directory!")
         # else:
-            # before_c = CURRENT_DIR[:cut]
-            # print(before_c)
+        # before_c = CURRENT_DIR[:cut]
+        # print(before_c)
         CURRENT_DIR = CURRENT_DIR[:cut]
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
         print(f"Current directory: {path}")
@@ -349,17 +349,17 @@ def main():
 
         functions = {
             "init": (init, ()),
-            "create": (create, (name, )),
-            "read": (read, (name, )),
-            "write": (write, (name, )),
-            "delete": (delete, (name, )),
-            "info": (info, (name, )),
+            "create": (create, (name,)),
+            "read": (read, (name,)),
+            "write": (write, (name,)),
+            "delete": (delete, (name,)),
+            "info": (info, (name,)),
             "copy": (copy, (name, new_loc)),
             "move": (move, (name, new_loc)),
-            "diropen": (diropen, (name, )),
-            "dirread": (dirread, (name, )),
-            "dirmake": (dirmake, (name, )),
-            "dirdel": (dirdel, (name, ))
+            "diropen": (diropen, (name,)),
+            "dirread": (dirread, (name,)),
+            "dirmake": (dirmake, (name,)),
+            "dirdel": (dirdel, (name,))
         }
 
         if command == "q":
@@ -373,4 +373,5 @@ def main():
         print(f"DONE: `{' '.join(s)}`\n")
 
 
-main()
+if __name__ == "__main___":
+    main()

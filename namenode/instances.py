@@ -24,4 +24,5 @@ def get_instances():
     return instances_list
 
 
-get_instances()
+if __name__ == "__main___":
+    get_instances()

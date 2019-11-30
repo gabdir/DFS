@@ -1,3 +1,5 @@
+import random
+
 import requests
 import pwd
 import os
@@ -205,13 +207,14 @@ def move(name, new_loc):
     # else:
     #     print(f"No such file {name}")
 
-
 def diropen(name):
     root = False
     if name[0] == "~":
         root = True
         name = name[2::]
-    datanode = requests.get(f"{MASTER_ADDRESS}/diropen").text
+    response = requests.get(f"{MASTER_ADDRESS}/diropen")
+    datanodes = response.json()['datanodes']
+    datanode = random.choice(datanodes)
     global CURRENT_DIR
     print("Datanode:", datanode)
     con = Connection(host=datanode,
@@ -257,6 +260,7 @@ def diropen(name):
             print(f"No such directory {path}")
 
 
+
 def dirread(name):
     root = False
     if name != "" and name[0] == "~":
@@ -286,28 +290,39 @@ def dirread(name):
 
 def dirmake(name):
     root = False
+    global CURRENT_DIR
     if name[0] == "~":
         root = True
         name = name[2::]
-    datanode = requests.get(f"{MASTER_ADDRESS}/dirmake").text
-    global CURRENT_DIR
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
     if root:
-        path = os.path.join(SERVER_STORAGE, name)
-        if exists(con, path):
-            print("Such directory already exists!")
-        else:
-            con.run(f"mkdir {path}")
+        for i in range(len(CURRENT_DIR)):
+            if CURRENT_DIR[i] == "/":
+                cut = i
+                path_to_header = name[:cut]
     else:
-        path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-        if exists(con, path):
-            print("Such directory already exists!")
+        path_to_header = CURRENT_DIR
+    headers = {"dir_path": path_to_header}
+    response = requests.get(f"{MASTER_ADDRESS}/dirmake/{name}", headers=headers)
+    datanodes = response.json()['datanodes']
+    status = response.status_code
+    for datanode in datanodes:
+        print("Datanode:", datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        if root:
+            path = os.path.join(SERVER_STORAGE, name)
+            if exists(con, path):
+                print("Such directory already exists!")
+            else:
+                con.run(f"mkdir {path}")
         else:
-            con.run(f"mkdir {path}")
+            path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+            if exists(con, path):
+                print("Such directory already exists!")
+            else:
+                con.run(f"mkdir {path}")
 
 
 def dirdel(name):

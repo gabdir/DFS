@@ -9,6 +9,7 @@ from random import choice
 from os import listdir, mkdir, system
 from instances import get_instances
 from shutil import rmtree
+from client.client import SERVER_STORAGE
 
 db.create_all()
 
@@ -103,7 +104,7 @@ def read(name):
     """
     :return: Response(json, 200) where json["datanode"] contains the active datanode
     """
-    datanode = random.choice(datanodes)
+    datanode = choice_datanode()
     response = {
         "status": 'success',
         "datanode": datanode
@@ -153,17 +154,36 @@ def diropen():
     Does nothing
     :return:
     """
-    pass
+    response = {
+        "datanodes": datanodes
+    }
+    return json.dumps(response), 200
 
 
-@app.route('/dirmake')
-def dirmake():
+@app.route('/dirmake/<name>')
+def dirmake(name):
     """
     Creates directory in DB
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    pass
+    fail_response = {
+        "status": 'fail',
+        "message": 'Directory does not exist'
+    }
+    dir_path = request.headers.get('dir_path')
+    dir = Directory.query.filter_by(path=dir_path).all()[0]
+    if not dir:
+        return json.dumps(fail_response), 400
+    path = dir_path + '/' + name
+    new_dir = Directory(path=path)
+    db.session.add(new_dir)
+    db.session.commit()
+    response = {
+        "datanodes": datanodes,
+        "message": 'Directory was made'
+    }
 
+    return json.dumps(response), 200
 
 @app.route('/dirdel')
 def dirdel():

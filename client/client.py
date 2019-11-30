@@ -27,13 +27,19 @@ def init():
         con.run(f"mkdir {SERVER_STORAGE}")
 
 
-def create(name):
+def write(name, creation=False):
+    if not creation:
+        if name not in os.listdir(LOCAL_STORAGE):
+            print(f"No such local file `{name}`")
+            return
+    else:
+        open(f"{LOCAL_STORAGE}/{name}", "w")
+
     headers = {'size': '0', 'dir_path': CURRENT_DIR}
-    response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
+    response = requests.get(f"{MASTER_ADDRESS}/write/{name}", headers=headers)
     datanodes = response.json()['datanodes']
     status = response.status_code
 
-    open(f"{LOCAL_STORAGE}/{name}", "w")
     if status == 400:
         print("Such file already exists!")
         return
@@ -45,23 +51,12 @@ def create(name):
                          )
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
         con.put(f"{LOCAL_STORAGE}/{name}", path)
-        os.remove(f"{LOCAL_STORAGE}/{name}")
+        if creation:
+            os.remove(f"{LOCAL_STORAGE}/{name}")
 
 
-def write(name):
-    if name not in os.listdir(LOCAL_STORAGE):
-        print(f"No such file `{name}`")
-        return
-
-    datanode = requests.get(f"{MASTER_ADDRESS}/write/{name}/").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
-    print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
-    con.put(f"{LOCAL_STORAGE}/{name}", path)
+def create(name):
+    write(name, creation=True)
 
 
 def read(name):

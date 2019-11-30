@@ -83,8 +83,8 @@ def info(name):
         return json.dumps(response), 200
 
 
-@app.route('/create/<name>')
-def create(name):
+@app.route('/write/<name>')
+def write(name):
     dir_path = request.headers.get('dir_path')
     size = request.headers.get('size')
     dir_id = Directory.query.filter_by(path=dir_path).first().id
@@ -99,11 +99,6 @@ def create(name):
     db.session.commit()
 
     return json.dumps(response), 200
-
-
-@app.route('/write/<name>')
-def write(name):
-    create(name)
 
 
 @app.route('/read/<name>')
@@ -192,5 +187,6 @@ if __name__ == '__main__':
     if not Directory.query.filter_by(path="").first():
         root = Directory(path="")
         db.session.add(root)
+        db.session.commit()
         db.session.commit()
     app.run("127.0.0.2")

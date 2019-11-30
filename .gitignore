@@ -23,4 +23,4 @@ pip-selfcheck.json
 
 new_key.pem
 /namenode/storage/
-/client/storage/
+/storage/

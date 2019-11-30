@@ -7,7 +7,7 @@ import json
 
 USERNAME = pwd.getpwuid(os.getuid())[0]
 
-MASTER_ADDRESS = 'http://127.0.0.1:5000'
+MASTER_ADDRESS = 'http://127.0.0.2:5000'
 KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
 LOCAL_STORAGE = os.getcwd() + "/storage"
 SERVER_STORAGE = '/home/ubuntu/storage'
@@ -100,24 +100,9 @@ def delete(name):
 
 
 def info(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/info/{name}").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    # if exists(con, f"{SERVER_STORAGE}/{name}"):
-    #     if exists(con, f"{SERVER_STORAGE}/{name}/"):
-    #         print(f"No such file {name}")
-    #     else:
-    #         con.run(f"stat {SERVER_STORAGE}/{name}")
-    # else:
-    #     print(f"No such file {name}")
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-    if exists(con, path):
-        con.run(f"stat {path}")
-    else:
-        print(f"No such file {name}")
+    response = requests.get(f"{MASTER_ADDRESS}/info/{name}")
+    print(response)
+    print(response.json()["message"])
 
 
 def copy(name, new_loc):

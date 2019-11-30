@@ -16,6 +16,7 @@ db.create_all()
 
 datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
 
+
 def choice_datanode():
     return choice(datanodes)
 
@@ -64,20 +65,22 @@ def info(name):
     """
         :return: Response(json, 200) where json contains information about file
     """
-    fail_response = {
-        "status": 'fail',
-        "message": 'File not exist'
-    }
-    file = File.query.filter_by(name=name).all()[0]
+
+    file = File.query.filter_by(name=name).first()
+    print(file)
     if not file:
-        return jsonify(fail_response), 404
+        response = {
+            "message": 'File not exist'
+        }
+        return json.dumps(response), 400
     else:
         response = {
-            "datanodes": datanodes,
-            "timestamp": file.timestamp,
-            "size": file.size
+            "timestamp": str(file.timestamp),
+            "size": file.size,
+            "message": f"File `{name}`. Created: `{str(file.timestamp)}`. Size: `{file.size}`"
         }
-    return json.dumps(response), 200
+        print(response)
+        return json.dumps(response), 200
 
 
 @app.route('/create/<name>')
@@ -115,6 +118,7 @@ def read(name):
     }
     return json.dumps(response), 200
 
+
 @app.route('/delete/<name>')
 def delete(name):
     File.query.filter_by(name=name).delete()
@@ -134,7 +138,6 @@ def copy(name):
     create(name)
 
 
-
 @app.route('/move/<name>')
 def move(name):
     """
@@ -151,6 +154,7 @@ def move(name):
     file.dir_id = dir_id
 
     return json.dumps(datanodes), 400
+
 
 @app.route('/diropen')
 def diropen():
@@ -189,4 +193,4 @@ if __name__ == '__main__':
         root = Directory(path="")
         db.session.add(root)
         db.session.commit()
-    app.run()
+    app.run("127.0.0.2")

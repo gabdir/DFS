@@ -4,18 +4,15 @@ from app import db
 from app import app
 from app.models import File, Directory
 from app import models
-from instances import get_instances
-from os import system, mkdir, listdir
-from random import choice
-from client.client import SERVER_STORAGE
 import requests
-import random
+from random import choice
+from os import listdir, mkdir, system
+from instances import get_instances
 from shutil import rmtree
 
 db.create_all()
 
-datanodes = ["ec2-52-14-232-104.us-east-2.compute.amazonaws.com"]
-
+datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
 
 def choice_datanode():
     return choice(datanodes)
@@ -41,10 +38,6 @@ def check_datanode_failure():
 
 @app.route('/init')
 def init():
-    """
-    Clears DB
-    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
-    """
     try:
         num_files_deleted = db.session.query(File).delete()
         num_dirs_deleted = db.session.query(Directory).delete()
@@ -58,6 +51,7 @@ def init():
     }
     print(num_files_deleted, num_dirs_deleted)
     return json.dumps(response), 200
+
 
 @app.route('/info/<name>')
 def info(name):
@@ -186,4 +180,8 @@ def dirread():
 
 
 if __name__ == '__main__':
-    pass
+    if not Directory.query.filter_by(path=""):
+        root = Directory(path="")
+        db.session.add(root)
+        db.session.commit()
+    app.run()

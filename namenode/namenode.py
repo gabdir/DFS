@@ -57,8 +57,7 @@ def init():
         "datanodes": datanodes
     }
     print(num_files_deleted, num_dirs_deleted)
-    # return jsonify(response), 200
-
+    #return jsonify(response), 200
 
 @app.route('/info/<name>')
 def info(name):
@@ -78,14 +77,10 @@ def info(name):
             "timestamp": file.timestamp,
             "size": file.size,
         }
-    # return jsonify(response), 200
-
+    #return jsonify(response), 200
 
 @app.route('/create')
 def create():
-    """
-        :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
-    """
     data = request.get_json()
     name = data['name']
     size = data['size']
@@ -99,13 +94,11 @@ def create():
         "message": 'Added',
         "datanodes": datanodes
     }
-    return jsonify(response), 200
-
+    return jsonify(response),200
 
 @app.route('/create/<name>')
 def create(name):
     return write(name)
-
 
 @app.route('/write')
 def write():
@@ -122,14 +115,10 @@ def read(name):
         "status": 'success',
         "datanode": datanode
     }
-    # return jsonify(response), 200
-
+    #return jsonify(response), 200
 
 @app.route('/delete/<name>')
 def delete(name):
-    """
-    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
-    """
     pass
 
 

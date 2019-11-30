@@ -53,11 +53,11 @@ def init():
         db.session.rollback()
     response = {
         "status": 'success',
-        "message": f'Number of rows deleted {num_files_deleted}',
+        "message": f'Number of rows deleted {num_files_deleted},number of dirs deleted {num_dirs_deleted}',
         "datanodes": datanodes
     }
     print(num_files_deleted, num_dirs_deleted)
-    #return jsonify(response), 200
+    return json.dumps(response), 200
 
 @app.route('/info/<name>')
 def info(name):
@@ -75,34 +75,33 @@ def info(name):
         response = {
             "datanodes": datanodes,
             "timestamp": file.timestamp,
-            "size": file.size,
+            "size": file.size
         }
-    #return jsonify(response), 200
+    return json.dumps(response), 200
 
-@app.route('/create')
-def create():
-    data = request.get_json()
-    name = data['name']
-    size = data['size']
-    dir_id = data['dir_id']
+@app.route('/create/<name>')
+def create(name):
+    dir_path = request.headers.get('dir_path')
+    size = request.headers.get('size')
+    dir_id = Directory.query.filter_by(path=dir_path).first().id
+    if File.query.filter_by(name=name, dir_id=dir_id).first():
+        print(File.query.filter_by(name=name, dir_id=dir_id).first())
+        return jsonify(datanodes), 400
 
     file = File(name=name, size=size, dir_id=dir_id)
     db.session.add(file)
     db.session.commit()
+
     response = {
         "status": 'success',
         "message": 'Added',
         "datanodes": datanodes
     }
-    return jsonify(response),200
+    return json.dumps(response), 200
 
-@app.route('/create/<name>')
-def create(name):
-    return write(name)
-
-@app.route('/write')
-def write():
-    create()
+@app.route('/write/<name>')
+def write(name):
+    create(name)
 
 
 @app.route('/read/<name>')
@@ -115,11 +114,17 @@ def read(name):
         "status": 'success',
         "datanode": datanode
     }
-    #return jsonify(response), 200
+    return json.dumps(response), 200
 
 @app.route('/delete/<name>')
 def delete(name):
-    pass
+    File.query.filter_by(name=name).delete()
+    db.session.commit()
+    response = {
+        "datanodes": datanodes,
+        "message": 'Deleted'
+    }
+    return json.dumps(response), 200
 
 
 @app.route('/copy/<name>')
@@ -127,7 +132,8 @@ def copy(name):
     """
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    pass
+    create(name)
+
 
 
 @app.route('/move/<name>')
@@ -135,8 +141,17 @@ def move(name):
     """
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    pass
+    file = File.query.filter_by(name=name).all()[0]
+    if not file:
+        return json.dumps(datanodes), 400
+    dir_to_move = request.headers.get('dir_to_move')
+    dir = Directory.query.filter_by(path=dir_to_move).all()[0]
+    if not dir:
+        return json.dumps(datanodes), 400
+    dir_id = dir.id
+    file.dir_id = dir_id
 
+    return json.dumps(datanodes), 400
 
 @app.route('/diropen')
 def diropen():

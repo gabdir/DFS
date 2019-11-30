@@ -15,14 +15,16 @@ CURRENT_DIR = ""
 
 
 def init():
-    datanode = requests.get(f"{MASTER_ADDRESS}/dirdel").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    con.run(f"rm -rf {SERVER_STORAGE}")
-    con.run(f"mkdir {SERVER_STORAGE}")
+    response = requests.get(f"{MASTER_ADDRESS}/init")
+    datanodes = response.json()['datanodes']
+    for datanode in datanodes:
+        print("Datanode:", datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        con.run(f"rm -rf {SERVER_STORAGE}")
+        con.run(f"mkdir {SERVER_STORAGE}")
 
 
 def create(name):
@@ -49,15 +51,20 @@ def write(name):
         print(f"No such file `{name}`")
         return
 
-    datanode = requests.get(f"{MASTER_ADDRESS}/write/{name}/").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
-    print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
-    con.put(f"{LOCAL_STORAGE}/{name}", path)
+    headers = {'size': '0', 'dir_path': CURRENT_DIR}
+    response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
+    datanodes = response.json()['datanodes']
+    status = response.status_code
+
+    for datanode in datanodes:
+        print("Datanode:", datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
+        print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
+        con.put(f"{LOCAL_STORAGE}/{name}", path)
 
 
 def read(name):

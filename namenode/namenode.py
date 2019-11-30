@@ -9,6 +9,7 @@ from os import system, mkdir, listdir
 from random import choice
 from client.client import SERVER_STORAGE
 import requests
+import random
 from shutil import rmtree
 
 db.create_all()
@@ -52,31 +53,59 @@ def init():
         "datanodes": datanodes
     }
     print(num_files_deleted, num_dirs_deleted)
-    return jsonify(response), 404
-
+    #return jsonify(response), 200
 
 @app.route('/info/<name>')
 def info(name):
-    response = {
-        "datanodes": datanodes,
-
+    fail_response = {
+        "status": 'fail',
+        "message": 'File not exist'
     }
+    file = File.query.filter_by(name=name).all()[0]
+    if not file:
+        return jsonify(fail_response), 404
+    else:
+        response = {
+            "datanodes": datanodes,
+            "timestamp": file.timestamp,
+            "size": file.size,
+        }
+    #return jsonify(response), 200
 
+@app.route('/create')
+def create():
+    data = request.get_json()
+    name = data['name']
+    size = data['size']
+    dir_id = data['dir_id']
+
+    file = File(name=name, size=size, dir_id=dir_id)
+    db.session.add(file)
+    db.session.commit()
+    response = {
+        "status": 'success',
+        "message": 'Added',
+        "datanodes": datanodes
+    }
+    return jsonify(response),200
 
 @app.route('/create/<name>')
 def create(name):
     return write(name)
 
-
-@app.route('/write/<name>')
-def write(name):
-    pass
+@app.route('/write')
+def write():
+    create()
 
 
 @app.route('/read/<name>')
 def read(name):
-    pass
-
+    datanode = random.choice(datanodes)
+    response = {
+        "status": 'success',
+        "datanode": datanode
+    }
+    #return jsonify(response), 200
 
 @app.route('/delete/<name>')
 def delete(name):

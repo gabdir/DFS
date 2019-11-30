@@ -11,7 +11,7 @@ db.create_all()
 
 datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
 
-
+print(datanodes[0])
 @app.route('/init')
 def init():
     try:
@@ -27,6 +27,7 @@ def init():
     }
     print(num_files_deleted, num_dirs_deleted)
     #return jsonify(response), 200
+
 
 @app.route('/info/<name>')
 def info(name):
@@ -45,26 +46,33 @@ def info(name):
         }
     #return jsonify(response), 200
 
-@app.route('/create')
-def create():
-    data = request.get_json()
-    name = data['name']
-    size = data['size']
-    dir_id = data['dir_id']
 
+@app.route('/create/<name>')
+def create(name):
+
+    dir_path = request.headers.get('dir_path')
+    size = request.headers.get('size')
+    dir_id = Directory.query.filter_by(path=dir_path).first().id
+    if File.query.filter_by(name=name, dir_id=dir_id).first():
+        print(File.query.filter_by(name=name, dir_id=dir_id).first())
+        return jsonify(datanodes), 400
     file = File(name=name, size=size, dir_id=dir_id)
     db.session.add(file)
     db.session.commit()
+
     response = {
-        "status": 'success',
+        # "status": 'success',
         "message": 'Added',
         "datanodes": datanodes
     }
-    return jsonify(response),200
+    # print(jsonify(datanodes))
+    return json.dumps(response), 200
+    # return jsonify(response),200
 
 
-@app.route('/write')
-def write():
+@app.route('/write/<name>')
+def write(name):
+    return datanodes[0]
     create()
 
 
@@ -77,8 +85,12 @@ def read(name):
     }
     #return jsonify(response), 200
 
+
 @app.route('/delete/<name>')
-def delete(name):
+def delete():
+    # data = request.get_json()
+    # id = data['id']
+    # File.query.filter_by(id=id).delete()
     pass
 
 
@@ -113,4 +125,8 @@ def dirread():
 
 
 if __name__ == '__main__':
-    pass
+    if not Directory.query.filter_by(path=""):
+        root = Directory(path="")
+        db.session.add(root)
+        db.session.commit()
+    app.run()

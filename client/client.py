@@ -3,6 +3,7 @@ import pwd
 import os
 from fabric import Connection
 from patchwork.files import exists
+import json
 
 USERNAME = pwd.getpwuid(os.getuid())[0]
 
@@ -25,17 +26,22 @@ def init():
 
 
 def create(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/create/{name}").text
-    print("Datanode:", datanode)
-    temp_file = open(f"{LOCAL_STORAGE}/{name}", "w")
-    print(os.listdir(LOCAL_STORAGE))
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
-    con.put(f"{LOCAL_STORAGE}/{name}", path)
-    os.remove(f"{LOCAL_STORAGE}/{name}")
+    headers = {'size': '0', 'dir_path': CURRENT_DIR}
+    response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
+    datanodes = response.json()['datanodes']
+    status = response.status_code
+    open(f"{LOCAL_STORAGE}/{name}", "w")
+
+
+    for datanode in datanodes:
+        print(datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
+        con.put(f"{LOCAL_STORAGE}/{name}", path)
+        os.remove(f"{LOCAL_STORAGE}/{name}")
 
 
 def write(name):
@@ -50,6 +56,7 @@ def write(name):
                      connect_kwargs={"key_filename": KEY_LOCATION}
                      )
     path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
+    print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
     con.put(f"{LOCAL_STORAGE}/{name}", path)
 
 

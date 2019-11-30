@@ -32,6 +32,7 @@ def create(name):
     response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
     datanodes = response.json()['datanodes']
     status = response.status_code
+
     open(f"{LOCAL_STORAGE}/{name}", "w")
     if status == 400:
         print("Such file already exists!")

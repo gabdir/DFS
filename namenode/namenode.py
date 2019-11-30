@@ -189,7 +189,7 @@ def dirread():
 
 
 if __name__ == '__main__':
-    if not Directory.query.filter_by(path=""):
+    if not Directory.query.filter_by(path="").first():
         root = Directory(path="")
         db.session.add(root)
         db.session.commit()

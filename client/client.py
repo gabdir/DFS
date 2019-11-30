@@ -33,8 +33,9 @@ def create(name):
     datanodes = response.json()['datanodes']
     status = response.status_code
     open(f"{LOCAL_STORAGE}/{name}", "w")
-
-
+    if status == 400:
+        print("Such file already exists!")
+        return
     for datanode in datanodes:
         print(datanode)
         con = Connection(host=datanode,
@@ -51,24 +52,21 @@ def write(name):
         print(f"No such file `{name}`")
         return
 
-    headers = {'size': '0', 'dir_path': CURRENT_DIR}
-    response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
-    datanodes = response.json()['datanodes']
-    status = response.status_code
-
-    for datanode in datanodes:
-        print("Datanode:", datanode)
-        con = Connection(host=datanode,
-                         user="ubuntu",
-                         connect_kwargs={"key_filename": KEY_LOCATION}
-                         )
-        path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
-        print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
-        con.put(f"{LOCAL_STORAGE}/{name}", path)
+    datanode = requests.get(f"{MASTER_ADDRESS}/write/{name}/").text
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+    path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
+    print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
+    con.put(f"{LOCAL_STORAGE}/{name}", path)
 
 
 def read(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/read/{name}").text
+    response = requests.get(f"{MASTER_ADDRESS}/read/{name}")
+    datanodes = response.json()['datanodes']
+    datanode = datanodes[0]
     print("Datanode:", datanode)
     con = Connection(host=datanode,
                      user="ubuntu",
@@ -387,5 +385,5 @@ def main():
         print(f"DONE: `{' '.join(s)}`\n")
 
 
-if __name__ == "__main___":
+if __name__ == "__main__":
     main()

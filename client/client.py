@@ -9,7 +9,7 @@ import json
 
 USERNAME = pwd.getpwuid(os.getuid())[0]
 
-MASTER_ADDRESS = 'http://127.0.0.1:5000'
+MASTER_ADDRESS = 'http://127.0.0.2:5000'
 KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
 LOCAL_STORAGE = os.getcwd() + "/storage"
 SERVER_STORAGE = '/home/ubuntu/storage'
@@ -29,14 +29,22 @@ def init():
         con.run(f"mkdir {SERVER_STORAGE}")
 
 
-def create(name):
+def write(name, creation=False):
+    if not creation:
+        if name not in os.listdir(LOCAL_STORAGE):
+            print(f"No such local file `{name}`")
+            return
+    else:
+        open(f"{LOCAL_STORAGE}/{name}", "w")
+
     headers = {'size': '0', 'dir_path': CURRENT_DIR}
-    response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
-    datanodes = response.json()['datanodes']
+    response = requests.get(f"{MASTER_ADDRESS}/write/{name}", headers=headers)
     status = response.status_code
-    open(f"{LOCAL_STORAGE}/{name}", "w")
 
-
+    if status == 400:
+        print("Such file already exists!")
+        return
+    datanodes = response.json()['datanodes']
     for datanode in datanodes:
         print(datanode)
         con = Connection(host=datanode,
@@ -45,32 +53,18 @@ def create(name):
                          )
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
         con.put(f"{LOCAL_STORAGE}/{name}", path)
-        os.remove(f"{LOCAL_STORAGE}/{name}")
+        if creation:
+            os.remove(f"{LOCAL_STORAGE}/{name}")
 
 
-def write(name):
-    if name not in os.listdir(LOCAL_STORAGE):
-        print(f"No such file `{name}`")
-        return
-
-    headers = {'size': '0', 'dir_path': CURRENT_DIR}
-    response = requests.get(f"{MASTER_ADDRESS}/create/{name}", headers=headers)
-    datanodes = response.json()['datanodes']
-    status = response.status_code
-
-    for datanode in datanodes:
-        print("Datanode:", datanode)
-        con = Connection(host=datanode,
-                         user="ubuntu",
-                         connect_kwargs={"key_filename": KEY_LOCATION}
-                         )
-        path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
-        print(os.path.getsize(f"{LOCAL_STORAGE}/{name}"))
-        con.put(f"{LOCAL_STORAGE}/{name}", path)
+def create(name):
+    write(name, creation=True)
 
 
 def read(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/read/{name}").text
+    response = requests.get(f"{MASTER_ADDRESS}/read/{name}")
+    datanodes = response.json()['datanodes']
+    datanode = datanodes[0]
     print("Datanode:", datanode)
     con = Connection(host=datanode,
                      user="ubuntu",
@@ -81,47 +75,28 @@ def read(name):
 
 
 def delete(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/delete/{name}").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+    response = requests.get(f"{MASTER_ADDRESS}/delete/{name}")
+    status = response.status_code
 
-    # if exists(con, path):
-    #     if exists(con, path):
-    #         print(f"No such file {name}")
-    #     else:
-    #         con.run(f"rm {path}")
-    # else:
-    #     print(f"No such file {name}")
-
-    if exists(con, path):
-        con.run(f"rm {path}")
+    if status == 400:
+        print(response.json()['message'])
+        return
     else:
-        print(f"No such file {name}")
+        datanodes = response.json()['datanodes']
+        for datanode in datanodes:
+            print("Datanode:", datanode)
+            con = Connection(host=datanode,
+                             user="ubuntu",
+                             connect_kwargs={"key_filename": KEY_LOCATION}
+                             )
+            path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+            con.run(f"rm {path}")
 
 
 def info(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/info/{name}").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    # if exists(con, f"{SERVER_STORAGE}/{name}"):
-    #     if exists(con, f"{SERVER_STORAGE}/{name}/"):
-    #         print(f"No such file {name}")
-    #     else:
-    #         con.run(f"stat {SERVER_STORAGE}/{name}")
-    # else:
-    #     print(f"No such file {name}")
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-    if exists(con, path):
-        con.run(f"stat {path}")
-    else:
-        print(f"No such file {name}")
+    response = requests.get(f"{MASTER_ADDRESS}/info/{name}")
+    print(response)
+    print(response.json()["message"])
 
 
 def copy(name, new_loc):
@@ -402,5 +377,5 @@ def main():
         print(f"DONE: `{' '.join(s)}`\n")
 
 
-if __name__ == "__main___":
+if __name__ == "__main__":
     main()

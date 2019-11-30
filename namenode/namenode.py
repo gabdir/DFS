@@ -4,16 +4,26 @@ from app import db
 from app import app
 from app.models import File, Directory
 from app import models
-import requests
-from random import choice
-from os import listdir, mkdir, system
 from instances import get_instances
+from os import system, mkdir, listdir
+from random import choice
+from client.client import SERVER_STORAGE
+import requests
+import random
 from shutil import rmtree
 from client.client import SERVER_STORAGE
 
 db.create_all()
 
 datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
+
+
+def check_main_dir():
+    if Directory.query.filter_by(path="").first() is None:
+        root = Directory(path="")
+        db.session.add(root)
+        db.session.commit()
+
 
 def choice_datanode():
     return choice(datanodes)
@@ -39,6 +49,10 @@ def check_datanode_failure():
 
 @app.route('/init')
 def init():
+    """
+    Clears DB
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     try:
         num_files_deleted = db.session.query(File).delete()
         num_dirs_deleted = db.session.query(Directory).delete()
@@ -51,6 +65,7 @@ def init():
         "datanodes": datanodes
     }
     print(num_files_deleted, num_dirs_deleted)
+    check_main_dir()
     return json.dumps(response), 200
 
 
@@ -59,44 +74,40 @@ def info(name):
     """
         :return: Response(json, 200) where json contains information about file
     """
-    fail_response = {
-        "status": 'fail',
-        "message": 'File not exist'
-    }
-    file = File.query.filter_by(name=name).all()[0]
+
+    file = File.query.filter_by(name=name).first()
+    print(file)
     if not file:
-        return jsonify(fail_response), 404
+        response = {
+            "message": 'File not exist'
+        }
+        return json.dumps(response), 400
     else:
         response = {
-            "datanodes": datanodes,
-            "timestamp": file.timestamp,
-            "size": file.size
+            "timestamp": str(file.timestamp),
+            "size": file.size,
+            "message": f"File `{name}`. Created: `{str(file.timestamp)}`. Size: `{file.size}`"
         }
-    return json.dumps(response), 200
+        print(response)
+        return json.dumps(response), 200
 
-@app.route('/create/<name>')
-def create(name):
+
+@app.route('/write/<name>')
+def write(name):
     dir_path = request.headers.get('dir_path')
     size = request.headers.get('size')
     dir_id = Directory.query.filter_by(path=dir_path).first().id
+    response = {
+        "datanodes": datanodes
+    }
     if File.query.filter_by(name=name, dir_id=dir_id).first():
-        print(File.query.filter_by(name=name, dir_id=dir_id).first())
-        return jsonify(datanodes), 400
-
+        # print(File.query.filter_by(name=name, dir_id=dir_id).first())
+        return json.dumps(response), 400
     file = File(name=name, size=size, dir_id=dir_id)
     db.session.add(file)
     db.session.commit()
 
-    response = {
-        "status": 'success',
-        "message": 'Added',
-        "datanodes": datanodes
-    }
     return json.dumps(response), 200
-
-@app.route('/write/<name>')
-def write(name):
-    create(name)
 
 
 @app.route('/read/<name>')
@@ -111,15 +122,24 @@ def read(name):
     }
     return json.dumps(response), 200
 
+
 @app.route('/delete/<name>')
 def delete(name):
-    File.query.filter_by(name=name).delete()
-    db.session.commit()
-    response = {
-        "datanodes": datanodes,
-        "message": 'Deleted'
-    }
-    return json.dumps(response), 200
+    query = File.query.filter_by(name=name)
+    if query.first():
+        query.delete()
+        db.session.commit()
+        response = {
+            "datanodes": datanodes,
+            "message": 'Deleted'
+        }
+        return json.dumps(response), 200
+    else:
+        response = {
+            "datanodes": datanodes,
+            "message": f'file {name} does not exist'
+        }
+        return json.dumps(response), 400
 
 
 @app.route('/copy/<name>')
@@ -128,7 +148,6 @@ def copy(name):
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
     create(name)
-
 
 
 @app.route('/move/<name>')
@@ -147,6 +166,7 @@ def move(name):
     file.dir_id = dir_id
 
     return json.dumps(datanodes), 400
+
 
 @app.route('/diropen')
 def diropen():
@@ -200,8 +220,6 @@ def dirread():
 
 
 if __name__ == '__main__':
-    if not Directory.query.filter_by(path=""):
-        root = Directory(path="")
-        db.session.add(root)
-        db.session.commit()
-    app.run()
+    print(bool(Directory.query.filter_by(path="").first()))
+    check_main_dir()
+    app.run("127.0.0.2")

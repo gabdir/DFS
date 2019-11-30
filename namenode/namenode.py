@@ -41,6 +41,10 @@ def check_datanode_failure():
 
 @app.route('/init')
 def init():
+    """
+    Clears DB
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     try:
         num_files_deleted = db.session.query(File).delete()
         num_dirs_deleted = db.session.query(Directory).delete()
@@ -53,10 +57,14 @@ def init():
         "datanodes": datanodes
     }
     print(num_files_deleted, num_dirs_deleted)
-    #return jsonify(response), 200
+    # return jsonify(response), 200
+
 
 @app.route('/info/<name>')
 def info(name):
+    """
+        :return: Response(json, 200) where json contains information about file
+    """
     fail_response = {
         "status": 'fail',
         "message": 'File not exist'
@@ -70,10 +78,14 @@ def info(name):
             "timestamp": file.timestamp,
             "size": file.size,
         }
-    #return jsonify(response), 200
+    # return jsonify(response), 200
+
 
 @app.route('/create')
 def create():
+    """
+        :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     data = request.get_json()
     name = data['name']
     size = data['size']
@@ -87,11 +99,13 @@ def create():
         "message": 'Added',
         "datanodes": datanodes
     }
-    return jsonify(response),200
+    return jsonify(response), 200
+
 
 @app.route('/create/<name>')
 def create(name):
     return write(name)
+
 
 @app.route('/write')
 def write():
@@ -100,40 +114,65 @@ def write():
 
 @app.route('/read/<name>')
 def read(name):
+    """
+    :return: Response(json, 200) where json["datanode"] contains the active datanode
+    """
     datanode = random.choice(datanodes)
     response = {
         "status": 'success',
         "datanode": datanode
     }
-    #return jsonify(response), 200
+    # return jsonify(response), 200
+
 
 @app.route('/delete/<name>')
 def delete(name):
+    """
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     pass
 
 
 @app.route('/copy/<name>')
 def copy(name):
+    """
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     pass
 
 
 @app.route('/move/<name>')
 def move(name):
+    """
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     pass
 
 
 @app.route('/diropen')
 def diropen():
+    """
+    Does nothing
+    :return:
+    """
     pass
 
 
 @app.route('/dirmake')
 def dirmake():
+    """
+    Creates directory in DB
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     pass
 
 
 @app.route('/dirdel')
 def dirdel():
+    """
+    Deletes directory in DB
+    :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
+    """
     pass
 
 

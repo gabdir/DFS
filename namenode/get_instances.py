@@ -3,8 +3,9 @@ import json
 
 
 def get_instances():
-    key = "AKIAID4V7PGM4U7YIFOA"
-    secret_key = "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"
+    keys_file = open("keys", "r")
+    key = keys_file.readline()
+    secret_key = keys_file.readline()
     subnet = "subnet-e7d69f9d"
     file = "file.txt"
     os.system(f'aws configure set aws_access_key_id {key}')
@@ -15,9 +16,12 @@ def get_instances():
 
     file = open("file.txt", "r")
     data = json.load(file)
-    instance_ids = []
+    instances_list = []
     for reservation in data["Reservations"]:
         for instances in reservation["Instances"]:
-            instance_ids.append(instances["InstanceId"])
-    print(instance_ids)
-    return instance_ids
+            instances_list.append(instances["NetworkInterfaces"][0]["Association"]["PublicDnsName"])
+    print(instances_list)
+    return instances_list
+
+
+get_instances()

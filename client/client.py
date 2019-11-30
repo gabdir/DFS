@@ -60,16 +60,21 @@ def create(name):
 
 
 def read(name):
-    response = requests.get(f"{MASTER_ADDRESS}/read/{name}")
-    datanodes = response.json()['datanodes']
-    datanode = datanodes[0]
+    headers = {"dir_path": CURRENT_DIR}
+    response = requests.get(f"{MASTER_ADDRESS}/read/{name}", headers=headers)
+    print(response.json()['datanode'])
+    datanode = response.json()['datanode']
+    status = response.status_code
+    if status == 400:
+        print(f"No such file {name}")
+        return
     print("Datanode:", datanode)
     con = Connection(host=datanode,
                      user="ubuntu",
                      connect_kwargs={"key_filename": KEY_LOCATION}
                      )
     path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-    con.get(f"{SERVER_STORAGE}/{name}", path)
+    con.get(path, f"{LOCAL_STORAGE}/{name}")
 
 
 def delete(name):
@@ -198,11 +203,7 @@ def diropen(name):
         for i in range(len(CURRENT_DIR)):
             if CURRENT_DIR[i] == "/":
                 cut = i
-        # if CURRENT_DIR[cut + 1::] == "":
-        #     print("Already in root directory!")
-        # else:
-        # before_c = CURRENT_DIR[:cut]
-        # print(before_c)
+
         CURRENT_DIR = CURRENT_DIR[:cut]
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
         print(f"Current directory: {path}")
@@ -221,10 +222,6 @@ def diropen(name):
     else:
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
         if exists(con, path):
-            # if CURRENT_DIR == "":
-            #     CURRENT_DIR = f"{name}"
-            # else:
-            #     CURRENT_DIR = f"{CURRENT_DIR}/{name}"
             CURRENT_DIR = os.path.join(CURRENT_DIR, name)
             con.run(f"cd {path}")
             print(f"Current directory: {path}")

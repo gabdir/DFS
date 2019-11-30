@@ -114,11 +114,18 @@ def read(name):
     """
     :return: Response(json, 200) where json["datanode"] contains the active datanode
     """
+
+    dir_path = request.headers.get('dir_path')
+    dir_id = Directory.query.filter_by(path=dir_path).first().id
     datanode = random.choice(datanodes)
     response = {
         "status": 'success',
         "datanode": datanode
     }
+
+    if not File.query.filter_by(name=name, dir_id=dir_id).first():
+        return json.dumps(response), 400
+
     return json.dumps(response), 200
 
 

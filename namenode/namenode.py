@@ -17,6 +17,13 @@ db.create_all()
 datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
 
 
+def check_main_dir():
+    if Directory.query.filter_by(path="").first() is None:
+        root = Directory(path="")
+        db.session.add(root)
+        db.session.commit()
+
+
 def choice_datanode():
     return choice(datanodes)
 
@@ -57,6 +64,7 @@ def init():
         "datanodes": datanodes
     }
     print(num_files_deleted, num_dirs_deleted)
+    check_main_dir()
     return json.dumps(response), 200
 
 
@@ -116,13 +124,21 @@ def read(name):
 
 @app.route('/delete/<name>')
 def delete(name):
-    File.query.filter_by(name=name).delete()
-    db.session.commit()
-    response = {
-        "datanodes": datanodes,
-        "message": 'Deleted'
-    }
-    return json.dumps(response), 200
+    query = File.query.filter_by(name=name)
+    if query.first():
+        query.delete()
+        db.session.commit()
+        response = {
+            "datanodes": datanodes,
+            "message": 'Deleted'
+        }
+        return json.dumps(response), 200
+    else:
+        response = {
+            "datanodes": datanodes,
+            "message": f'file {name} does not exist'
+        }
+        return json.dumps(response), 400
 
 
 @app.route('/copy/<name>')
@@ -184,9 +200,6 @@ def dirread():
 
 
 if __name__ == '__main__':
-    if not Directory.query.filter_by(path="").first():
-        root = Directory(path="")
-        db.session.add(root)
-        db.session.commit()
-        db.session.commit()
+    print(bool(Directory.query.filter_by(path="").first()))
+    check_main_dir()
     app.run("127.0.0.2")

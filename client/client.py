@@ -37,12 +37,12 @@ def write(name, creation=False):
 
     headers = {'size': '0', 'dir_path': CURRENT_DIR}
     response = requests.get(f"{MASTER_ADDRESS}/write/{name}", headers=headers)
-    datanodes = response.json()['datanodes']
     status = response.status_code
 
     if status == 400:
         print("Such file already exists!")
         return
+    datanodes = response.json()['datanodes']
     for datanode in datanodes:
         print(datanode)
         con = Connection(host=datanode,
@@ -73,26 +73,22 @@ def read(name):
 
 
 def delete(name):
-    datanode = requests.get(f"{MASTER_ADDRESS}/delete/{name}").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+    response = requests.get(f"{MASTER_ADDRESS}/delete/{name}")
+    status = response.status_code
 
-    # if exists(con, path):
-    #     if exists(con, path):
-    #         print(f"No such file {name}")
-    #     else:
-    #         con.run(f"rm {path}")
-    # else:
-    #     print(f"No such file {name}")
-
-    if exists(con, path):
-        con.run(f"rm {path}")
+    if status == 400:
+        print(response.json()['message'])
+        return
     else:
-        print(f"No such file {name}")
+        datanodes = response.json()['datanodes']
+        for datanode in datanodes:
+            print("Datanode:", datanode)
+            con = Connection(host=datanode,
+                             user="ubuntu",
+                             connect_kwargs={"key_filename": KEY_LOCATION}
+                             )
+            path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+            con.run(f"rm {path}")
 
 
 def info(name):

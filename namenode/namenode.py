@@ -198,7 +198,7 @@ def move(name):
     if not file:
         return json.dumps(fail_response), 400
     dir_to_move = request.headers.get('dir_to_move')
-    dir = Directory.query.filter_by(path=dir_to_move).all()[0]
+    dir = Directory.query.filter_by(path=dir_to_move).first()
     fail_response_dir = {
         "datanodes": datanodes,
         "message": 'Directory is not exist'
@@ -273,7 +273,7 @@ def dirdel():
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
     dir_path = request.headers.get('dir_path')
-    dir = Directory.query.filter_by(path=dir_path).all()[0]
+    dir = Directory.query.filter_by(path=dir_path).first()
     fail_response = {
         "datanodes": datanodes,
         "message": 'Directory is not exist'
@@ -297,7 +297,7 @@ def dirread():
     response = {
         "datanode": datanode,
     }
-    if not Directory.query.filter_by(path=dir_path).all()[0]:
+    if not Directory.query.filter_by(path=dir_path).first():
         return json.dumps(response), 400
 
     return json.dumps(response), 200

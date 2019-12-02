@@ -1,7 +1,7 @@
 FROM python:3.7.1
 
 ENV PYTHONDONTWRITEBYTECODE 1
-ENV FLASK_APP "./manage.py"
+ENV FLASK_APP "./namenode.py"
 ENV FLASK_ENV "development"
 ENV FLASK_DEBUG True
 
@@ -12,7 +12,7 @@ ADD . /app
 ADD ./requirements.txt ./app/requirements.txt
 RUN pip install -r requirements.txt
 
-ADD manage.py /app
+ADD namenode.py /app
 
 EXPOSE 5000
 

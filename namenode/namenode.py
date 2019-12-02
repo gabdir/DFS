@@ -11,6 +11,7 @@ from client.client import SERVER_STORAGE
 import requests
 import random
 from shutil import rmtree
+from client.client import SERVER_STORAGE
 
 db.create_all()
 
@@ -78,11 +79,13 @@ def info(name):
     print(file)
     if not file:
         response = {
+            "datanodes": datanodes,
             "message": 'File not exist'
         }
         return json.dumps(response), 400
     else:
         response = {
+            "datanodes": datanodes,
             "timestamp": str(file.timestamp),
             "size": file.size,
             "message": f"File `{name}`. Created: `{str(file.timestamp)}`. Size: `{file.size}`"
@@ -119,7 +122,6 @@ def read(name):
     dir_id = Directory.query.filter_by(path=dir_path).first().id
     datanode = random.choice(datanodes)
     response = {
-        "status": 'success',
         "datanode": datanode
     }
 
@@ -153,7 +155,7 @@ def copy(name):
     """
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    create(name)
+    write(name)
 
 
 @app.route('/move/<name>')
@@ -162,16 +164,29 @@ def move(name):
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
     file = File.query.filter_by(name=name).all()[0]
+    fail_response = {
+        "datanodes": datanodes,
+        "message": 'File not exist'
+    }
     if not file:
-        return json.dumps(datanodes), 400
+        return json.dumps(fail_response), 400
     dir_to_move = request.headers.get('dir_to_move')
     dir = Directory.query.filter_by(path=dir_to_move).all()[0]
+    fail_response_dir = {
+        "datanodes": datanodes,
+        "message": 'Directory is not exist'
+    }
     if not dir:
-        return json.dumps(datanodes), 400
+        return json.dumps(fail_response_dir), 400
     dir_id = dir.id
     file.dir_id = dir_id
 
-    return json.dumps(datanodes), 400
+    response = {
+        "datanodes": datanodes,
+        "message": "Moved to directory"
+    }
+
+    return json.dumps(response), 400
 
 
 @app.route('/diropen')
@@ -180,17 +195,37 @@ def diropen():
     Does nothing
     :return:
     """
-    pass
+    response = {
+        "datanodes": datanodes,
+        "message": 'Directory opened'
+    }
+    return json.dumps(response), 200
 
 
-@app.route('/dirmake')
-def dirmake():
+@app.route('/dirmake/<name>')
+def dirmake(name):
     """
     Creates directory in DB
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    pass
+    fail_response = {
+        "datanodes": datanodes,
+        "message": 'Directory does not exist'
+    }
+    dir_path = request.headers.get('dir_path')
+    dir = Directory.query.filter_by(path=dir_path).all()[0]
+    if not dir:
+        return json.dumps(fail_response), 400
+    path = dir_path + '/' + name
+    new_dir = Directory(path=path)
+    db.session.add(new_dir)
+    db.session.commit()
+    response = {
+        "datanodes": datanodes,
+        "message": 'Directory was made'
+    }
 
+    return json.dumps(response), 200
 
 @app.route('/dirdel')
 def dirdel():
@@ -198,12 +233,39 @@ def dirdel():
     Deletes directory in DB
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    pass
+    dir_path = request.headers.get('dir_path')
+    dir = Directory.query.filter_by(path=dir_path).all()[0]
+    fail_response = {
+        "datanodes": datanodes,
+        "message": 'Directory is not exist'
+    }
+    if not dir:
+        return json.dumps(fail_response), 400
+    else:
+        Directory.query.filter_by(path=dir_path).delete()
+        response = {
+            "datanodes": datanodes,
+            "message": 'Directory was deleted'
+        }
+    return json.dumps(response), 200
 
 
 @app.route('/dirread')
 def dirread():
-    pass
+    dir_path = request.headers.get('dir_path')
+    if not Directory.query.filter_by(path=dir_path).all()[0]:
+        fail_response = {
+            "datanodes": datanodes,
+            "message": 'Directory does not exist'
+        }
+        return json.dumps(fail_response), 400
+    else:
+        response = {
+            "datanodes": datanodes,
+            "message": 'Directory exist'
+        }
+        return json.dumps(response), 200
+
 
 
 if __name__ == '__main__':

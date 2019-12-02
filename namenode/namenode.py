@@ -250,7 +250,8 @@ def dirmake(name):
     what_create = Directory.query.filter_by(path=dir_with_current).first()
     if not where_create:
         return json.dumps(fail_response1), 400
-    if what_create :
+
+    if what_create:
         return json.dumps(fail_response2), 400
 
     new_dir = Directory(path=dir_with_current)

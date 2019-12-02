@@ -9,8 +9,9 @@ import json
 
 USERNAME = pwd.getpwuid(os.getuid())[0]
 
-MASTER_ADDRESS = 'http://172.17.0.9:5000'
-KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
+MASTER_ADDRESS = 'http://172.17.0.11:5000'
+KEY_LOCATION = f"new_key.pem"
+# KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
 LOCAL_STORAGE = os.getcwd() + "/storage"
 SERVER_STORAGE = '/home/ubuntu/storage'
 CURRENT_DIR = ""
@@ -133,27 +134,25 @@ def copy(name, new_loc):
     #     else:
     #         print(f"No such file {path_file}")
 
-
-
-        # path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-        # if root:
-        #     path_loc = os.path.join(SERVER_STORAGE, new_loc)
-        #     if exists(con, path_file):
-        #         if exists(con, path_loc):
-        #             con.run(f"cp -b {path_file} {path_loc}")
-        #         else:
-        #             print(f"No such directory {path_loc}")
-        #     else:
-        #         print(f"No such file {path_file}")
-        # else:
-        #     path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
-        #     if exists(con, path_file):
-        #         if exists(con, path_loc):
-        #             con.run(f"cp -b {path_file} {path_loc}")
-        #         else:
-        #             print(f"No such directory {path_loc}")
-        #     else:
-        #         print(f"No such file {path_file}")
+    # path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+    # if root:
+    #     path_loc = os.path.join(SERVER_STORAGE, new_loc)
+    #     if exists(con, path_file):
+    #         if exists(con, path_loc):
+    #             con.run(f"cp -b {path_file} {path_loc}")
+    #         else:
+    #             print(f"No such directory {path_loc}")
+    #     else:
+    #         print(f"No such file {path_file}")
+    # else:
+    #     path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
+    #     if exists(con, path_file):
+    #         if exists(con, path_loc):
+    #             con.run(f"cp -b {path_file} {path_loc}")
+    #         else:
+    #             print(f"No such directory {path_loc}")
+    #     else:
+    #         print(f"No such file {path_file}")
 
     # if exists(con, f"{SERVER_STORAGE}/{name}"):
     #     if exists(con, f"{SERVER_STORAGE}/{name}/"):
@@ -322,7 +321,6 @@ def dirmake(name):
                 con.run(f"mkdir {full_with_current}")
         else:
             print(f"No such directory {full_without}")
-
 
 
 def dirdel(name):

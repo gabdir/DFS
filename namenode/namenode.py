@@ -9,6 +9,7 @@ from os import system, mkdir, listdir
 from random import choice
 import random
 from shutil import rmtree
+
 SERVER_STORAGE = '/home/ubuntu/storage'
 
 db.create_all()
@@ -27,6 +28,7 @@ def choice_datanode():
     return choice(datanodes)
 
 
+@app.before_request
 def check_datanode_failure():
     global datanodes
     old_datanodes = set(datanodes)
@@ -250,7 +252,7 @@ def dirmake(name):
     what_create = Directory.query.filter_by(path=dir_with_current).first()
     if not where_create:
         return json.dumps(fail_response1), 400
-    if what_create :
+    if what_create:
         return json.dumps(fail_response2), 400
 
     new_dir = Directory(path=dir_with_current)
@@ -301,10 +303,12 @@ def dirread():
     return json.dumps(response), 200
 
 
+print("Halo")
 if __name__ == '__main__':
     if not Directory.query.filter_by(path="").first():
         db.session.add(Directory(path=""))
         db.session.commit()
+    print("hello")
     print(bool(Directory.query.filter_by(path="").first()))
     check_main_dir()
-    app.run("127.0.0.2")
+    app.run()

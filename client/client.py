@@ -105,31 +105,41 @@ def copy(name, new_loc):
         root = True
         new_loc = new_loc[2::]
     global CURRENT_DIR
-    datanode = requests.get(f"{MASTER_ADDRESS}/copy/{name}").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-    if root:
-        path_loc = os.path.join(SERVER_STORAGE, new_loc)
-        if exists(con, path_file):
-            if exists(con, path_loc):
-                con.run(f"cp -b {path_file} {path_loc}")
+
+    headers = {'size': '0', 'dir_path': CURRENT_DIR}
+    response = requests.get(f"{MASTER_ADDRESS}/copy/{name}", headers=headers)
+    status = response.status_code
+    datanodes = response.json()['datanodes']
+
+    if status == 400:
+        print("Such file already exists!")
+        return
+
+    for datanode in datanodes:
+        print("Datanode:", datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+        if root:
+            path_loc = os.path.join(SERVER_STORAGE, new_loc)
+            if exists(con, path_file):
+                if exists(con, path_loc):
+                    con.run(f"cp -b {path_file} {path_loc}")
+                else:
+                    print(f"No such directory {path_loc}")
             else:
-                print(f"No such directory {path_loc}")
+                print(f"No such file {path_file}")
         else:
-            print(f"No such file {path_file}")
-    else:
-        path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
-        if exists(con, path_file):
-            if exists(con, path_loc):
-                con.run(f"cp -b {path_file} {path_loc}")
+            path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
+            if exists(con, path_file):
+                if exists(con, path_loc):
+                    con.run(f"cp -b {path_file} {path_loc}")
+                else:
+                    print(f"No such directory {path_loc}")
             else:
-                print(f"No such directory {path_loc}")
-        else:
-            print(f"No such file {path_file}")
+                print(f"No such file {path_file}")
 
     # if exists(con, f"{SERVER_STORAGE}/{name}"):
     #     if exists(con, f"{SERVER_STORAGE}/{name}/"):

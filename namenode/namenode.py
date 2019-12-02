@@ -15,7 +15,7 @@ from client.client import SERVER_STORAGE
 
 db.create_all()
 
-datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
+datanodes = ["ec2-52-15-157-220.us-east-2.compute.amazonaws.com"]
 
 
 def check_main_dir():

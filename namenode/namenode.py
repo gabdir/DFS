@@ -7,11 +7,9 @@ from app import models
 from instances import get_instances
 from os import system, mkdir, listdir
 from random import choice
-from client.client import SERVER_STORAGE
-import requests
 import random
 from shutil import rmtree
-from client.client import SERVER_STORAGE
+SERVER_STORAGE = '/home/ubuntu/storage'
 
 db.create_all()
 
@@ -214,7 +212,7 @@ def dirmake(name):
     """
     fail_response = {
         "datanodes": datanodes,
-        "message": 'Directory does not exist'
+        "message": 'Directory does not exist or directory already created'
     }
     dir_path = request.headers.get('dir_path')
     dir = Directory.query.filter_by(path=dir_path).all()[0]
@@ -224,6 +222,8 @@ def dirmake(name):
         path = name
     else:
         path = dir_path + '/' + name
+    if Directory.query.filter_by(path=path).all()[0]:
+        return json.dumps(fail_response), 400
     new_dir = Directory(path=path)
     db.session.add(new_dir)
     db.session.commit()
@@ -271,6 +271,9 @@ def dirread():
 
 
 if __name__ == '__main__':
+    if not Directory.query.filter_by(path="").first():
+        db.session.add(Directory(path=""))
+        db.session.commit()
     print(bool(Directory.query.filter_by(path="").first()))
     check_main_dir()
     app.run("127.0.0.2")

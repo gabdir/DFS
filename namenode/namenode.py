@@ -155,7 +155,32 @@ def copy(name):
     """
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    write(name)
+    dir_from_move = request.headers.get('dir_from_move')
+    dir_from_move_id = Directory.query.filter_by(path=dir_from_move).first().id
+    file = File.query.filter_by(name=name, dir_id=dir_from_move_id).first()
+    fail_response = {
+        "datanodes": datanodes,
+        "message": 'File not exist'
+    }
+    if not file:
+        return json.dumps(fail_response), 400
+    dir_to_move = request.headers.get('dir_to_move')
+    dir_to_move_id = Directory.query.filter_by(path=dir_to_move).first().id
+    fail_response_dir = {
+        "datanodes": datanodes,
+        "message": 'Directory is not exist'
+    }
+    if not dir:
+        return json.dumps(fail_response_dir), 400
+
+    copied_file = File(name=name, size=file.size, dir_id=dir_to_move_id)
+    db.session.add(copied_file)
+    db.session.commit()
+    response = {
+        "datanodes": datanodes,
+        "message": "Copied to directory"
+    }
+    return json.dumps(response), 200
 
 
 @app.route('/move/<name>')
@@ -163,7 +188,9 @@ def move(name):
     """
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    file = File.query.filter_by(name=name).all()[0]
+    dir_from_move = request.headers.get('dir_from_move')
+    dir_from_move_id = Directory.query.filter_by(path=dir_from_move).first().id
+    file = File.query.filter_by(name=name, dir_id=dir_from_move_id).first()
     fail_response = {
         "datanodes": datanodes,
         "message": 'File not exist'
@@ -180,12 +207,11 @@ def move(name):
         return json.dumps(fail_response_dir), 400
     dir_id = dir.id
     file.dir_id = dir_id
-
+    db.session.commit()
     response = {
         "datanodes": datanodes,
         "message": "Moved to directory"
     }
-
     return json.dumps(response), 200
 
 
@@ -212,19 +238,24 @@ def dirmake(name):
     Creates directory in DB
     :return: Response(json, 200) where json["datanodes"] contains the list of active datanodes
     """
-    fail_response = {
+    fail_response1 = {
         "datanodes": datanodes,
         "message": 'Directory does not exist'
     }
+    fail_response2 = {
+        "datanodes": datanodes,
+        "message": 'Such directory already exists'
+    }
     dir_path = request.headers.get('dir_path')
-    dir = Directory.query.filter_by(path=dir_path).all()[0]
-    if not dir:
-        return json.dumps(fail_response), 400
-    if dir_path == "":
-        path = name
-    else:
-        path = dir_path + '/' + name
-    new_dir = Directory(path=path)
+    dir_with_current = request.headers.get("dir_with_current")
+    where_create = Directory.query.filter_by(path=dir_path).first()
+    what_create = Directory.query.filter_by(path=dir_with_current).first()
+    if not where_create:
+        return json.dumps(fail_response1), 400
+    if what_create :
+        return json.dumps(fail_response2), 400
+
+    new_dir = Directory(path=dir_with_current)
     db.session.add(new_dir)
     db.session.commit()
     response = {
@@ -233,6 +264,7 @@ def dirmake(name):
     }
 
     return json.dumps(response), 200
+
 
 @app.route('/dirdel')
 def dirdel():
@@ -250,6 +282,7 @@ def dirdel():
         return json.dumps(fail_response), 400
     else:
         Directory.query.filter_by(path=dir_path).delete()
+        db.session.commit()
         response = {
             "datanodes": datanodes,
             "message": 'Directory was deleted'

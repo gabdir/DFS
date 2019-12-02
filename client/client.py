@@ -34,9 +34,11 @@ def write(name, creation=False):
         if name not in os.listdir(LOCAL_STORAGE):
             print(f"No such local file `{name}`")
             return
+        size = os.path.getsize(os.path.join(LOCAL_STORAGE, name))
     else:
         open(f"{LOCAL_STORAGE}/{name}", "w")
-    headers = {'size': '0', 'dir_path': CURRENT_DIR}
+        size = 0
+    headers = {'size': str(size), 'dir_path': CURRENT_DIR}
     response = requests.get(f"{MASTER_ADDRESS}/write/{name}", headers=headers)
     status = response.status_code
 
@@ -102,46 +104,56 @@ def info(name):
 
 
 def copy(name, new_loc):
-    root = False
-    if new_loc[0] == "~":
-        root = True
-        new_loc = new_loc[2::]
-    global CURRENT_DIR
+    move(name, new_loc, copy=True)
+    # global CURRENT_DIR
+    # dir_to_move = get_dir(new_loc)
+    # temp_dir = get_dir(name)
+    # headers = {"dir_to_move": dir_to_move}
+    # response = requests.get(f"{MASTER_ADDRESS}/copy/{name}", headers=headers)
+    # status = response.status_code
+    # datanodes = response.json()["datanodes"]
+    # message = response.json()["message"]
+    # if status == 400:
+    #     print(message)
+    #     return
+    #
+    # for datanode in datanodes:
+    #     print("Datanode:", datanode)
+    #     con = Connection(host=datanode,
+    #                      user="ubuntu",
+    #                      connect_kwargs={"key_filename": KEY_LOCATION}
+    #                      )
+    #     path_file = os.path.join(SERVER_STORAGE, temp_dir)
+    #     if exists(con, path_file):
+    #         path_loc = os.path.join(SERVER_STORAGE, dir_to_move)
+    #         if exists(con, path_loc):
+    #             con.run(f"cp -b {path_file} {path_loc}")
+    #         else:
+    #             print(f"No such directory {path_loc}")
+    #     else:
+    #         print(f"No such file {path_file}")
 
-    headers = {'size': '0', 'dir_path': CURRENT_DIR}
-    response = requests.get(f"{MASTER_ADDRESS}/copy/{name}", headers=headers)
-    status = response.status_code
-    datanodes = response.json()['datanodes']
 
-    if status == 400:
-        print("Such file already exists!")
-        return
 
-    for datanode in datanodes:
-        print("Datanode:", datanode)
-        con = Connection(host=datanode,
-                         user="ubuntu",
-                         connect_kwargs={"key_filename": KEY_LOCATION}
-                         )
-        path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-        if root:
-            path_loc = os.path.join(SERVER_STORAGE, new_loc)
-            if exists(con, path_file):
-                if exists(con, path_loc):
-                    con.run(f"cp -b {path_file} {path_loc}")
-                else:
-                    print(f"No such directory {path_loc}")
-            else:
-                print(f"No such file {path_file}")
-        else:
-            path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
-            if exists(con, path_file):
-                if exists(con, path_loc):
-                    con.run(f"cp -b {path_file} {path_loc}")
-                else:
-                    print(f"No such directory {path_loc}")
-            else:
-                print(f"No such file {path_file}")
+        # path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+        # if root:
+        #     path_loc = os.path.join(SERVER_STORAGE, new_loc)
+        #     if exists(con, path_file):
+        #         if exists(con, path_loc):
+        #             con.run(f"cp -b {path_file} {path_loc}")
+        #         else:
+        #             print(f"No such directory {path_loc}")
+        #     else:
+        #         print(f"No such file {path_file}")
+        # else:
+        #     path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
+        #     if exists(con, path_file):
+        #         if exists(con, path_loc):
+        #             con.run(f"cp -b {path_file} {path_loc}")
+        #         else:
+        #             print(f"No such directory {path_loc}")
+        #     else:
+        #         print(f"No such file {path_file}")
 
     # if exists(con, f"{SERVER_STORAGE}/{name}"):
     #     if exists(con, f"{SERVER_STORAGE}/{name}/"):
@@ -152,47 +164,57 @@ def copy(name, new_loc):
     #     print(f"No such file {name}")
 
 
-def move(name, new_loc):
-    root = False
-    if new_loc[0] == "~":
-        root = True
-        new_loc = new_loc[2::]
-    global CURRENT_DIR
-    datanode = requests.get(f"{MASTER_ADDRESS}/move/{name}").text
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    path_file = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-    if root:
-        path_loc = os.path.join(SERVER_STORAGE, new_loc)
-        if exists(con, path_file):
-            if exists(con, path_loc):
-                con.run(f"mv  {path_file} {path_loc}")
-            else:
-                print(f"No such directory {path_loc}")
-        else:
-            print(f"No such file {path_file}")
+def move(name, new_loc, copy=False):
+    dir_to_move = get_dir(new_loc)
+    temp_dir = get_dir_for_file(name)
+    headers = {"dir_from_move": temp_dir, "dir_to_move": dir_to_move}
+    if copy:
+        response = requests.get(f"{MASTER_ADDRESS}/copy/{name}", headers=headers)
     else:
-        path_loc = os.path.join(SERVER_STORAGE, CURRENT_DIR, new_loc)
+        response = requests.get(f"{MASTER_ADDRESS}/move/{name}", headers=headers)
+    print(response.json())
+    datanodes = response.json()['datanodes']
+    print(datanodes)
+    message = response.json()['message']
+    status = response.status_code
+    if status == "400":
+        print(message)
+        return
+    for datanode in datanodes:
+        print("Datanode:", datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        path_file = os.path.join(SERVER_STORAGE, temp_dir)
+        file = os.path.join(path_file, name)
         if exists(con, path_file):
+            path_loc = os.path.join(SERVER_STORAGE, dir_to_move)
             if exists(con, path_loc):
-                con.run(f"mv {path_file} {path_loc}")
+                if copy:
+                    con.run(f"cp -b {file} {path_loc}")
+                else:
+                    con.run(f"mv {file} {path_loc}")
             else:
                 print(f"No such directory {path_loc}")
         else:
             print(f"No such file {path_file}")
 
-    # if exists(con, f"{SERVER_STORAGE}/{name}"):
-    #     if exists(con, f"{SERVER_STORAGE}/{name}/"):
-    #         print(f"No such file {name}")
-    #     if exists(con, f"{SERVER_STORAGE}/{new_loc}/"):
-    #         con.run(f"mv {SERVER_STORAGE}/{name} {SERVER_STORAGE}/{new_loc}/")
-    #     else:
-    #         print(f"No such directory {new_loc}")
-    # else:
-    #     print(f"No such file {name}")
+
+def get_dir_for_file(name):
+    root = False
+    if name != "" and name[0] == "~":
+        root = True
+        name = name[2::]
+    if root:
+        cut = 0
+        for i in range(len(name)):
+            if name[i] == "/":
+                cut = i
+        temp_dir = name[:cut]
+    else:
+        temp_dir = CURRENT_DIR
+    return temp_dir
 
 
 def get_dir(name):
@@ -204,7 +226,11 @@ def get_dir(name):
     if root:
         temp_dir = name
     else:
-        temp_dir = os.path.join(CURRENT_DIR, name)
+        if name == "":
+            temp_dir = CURRENT_DIR
+        else:
+            temp_dir = os.path.join(CURRENT_DIR, name)
+
     return temp_dir
 
 
@@ -247,7 +273,6 @@ def diropen(name):
 
 def dirread(name):
     global CURRENT_DIR
-
     temp_dir = get_dir(name)
     headers = {"dir_path": temp_dir}
     response = requests.get(f"{MASTER_ADDRESS}/dirread", headers=headers)
@@ -271,71 +296,71 @@ def dirread(name):
 
 
 def dirmake(name):
-    root = False
-    global CURRENT_DIR
-    if name[0] == "~":
-        root = True
-        name = name[2::]
-    if root:
-        for i in range(len(CURRENT_DIR)):
-            if CURRENT_DIR[i] == "/":
-                cut = i
-                path_to_header = name[:cut]
-    else:
-        path_to_header = CURRENT_DIR
-    headers = {"dir_path": path_to_header}
+    path_without = get_dir_for_file(name)
+
+    path_with_current = get_dir(name)
+    headers = {"dir_path": path_without, "dir_with_current": path_with_current}
     response = requests.get(f"{MASTER_ADDRESS}/dirmake/{name}", headers=headers)
     datanodes = response.json()['datanodes']
     status = response.status_code
+    message = response.json()["message"]
+    if status == "400":
+        print(message)
+        return
     for datanode in datanodes:
         print("Datanode:", datanode)
         con = Connection(host=datanode,
                          user="ubuntu",
                          connect_kwargs={"key_filename": KEY_LOCATION}
                          )
-        if root:
-            path = os.path.join(SERVER_STORAGE, name)
-            if exists(con, path):
+        full_with_current = os.path.join(SERVER_STORAGE, path_with_current)
+        full_without = os.path.join(SERVER_STORAGE, path_without)
+        if exists(con, full_without):
+            if exists(con, full_with_current):
                 print("Such directory already exists!")
             else:
-                con.run(f"mkdir {path}")
+                con.run(f"mkdir {full_with_current}")
         else:
-            path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-            if exists(con, path):
-                print("Such directory already exists!")
-            else:
-                con.run(f"mkdir {path}")
+            print(f"No such directory {full_without}")
+
 
 
 def dirdel(name):
-    root = False
-    if name != "" and name[0] == "~":
-        root = True
-        name = name[2::]
-    dir_path = ''
+    global CURRENT_DIR
+    dir_path = get_dir(name)
     headers = {'dir_path': dir_path}
     response = requests.get(f"{MASTER_ADDRESS}/dirdel", headers=headers)
-    datanode = response.json()['datanodes']
-    global CURRENT_DIR
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
-    if root:
-        path = os.path.join(SERVER_STORAGE, name)
+    datanodes = response.json()['datanodes']
+    status = response.status_code
+    message = response.json()['message']
+    if status == "400":
+        print(message)
+        return
+    for datanode in datanodes:
+        print("Datanode:", datanode)
+        con = Connection(host=datanode,
+                         user="ubuntu",
+                         connect_kwargs={"key_filename": KEY_LOCATION}
+                         )
+        path = os.path.join(SERVER_STORAGE, dir_path)
         if exists(con, path):
-            # con.run(f"find {SERVER_STORAGE}/{CURRENT_DIR}/{name} -type f -exec echo Not empty \;")
             con.run(f"rm -rf {path}")
         else:
             print(f"No such directory {path}")
-    else:
-        path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-        if exists(con, path):
-            # con.run(f"find {SERVER_STORAGE}/{CURRENT_DIR}/{name} -type f -exec echo Not empty \;")
-            con.run(f"rm -rf {path}")
-        else:
-            print(f"No such directory {path}")
+        # if root:
+        #     path = os.path.join(SERVER_STORAGE, name)
+        #     if exists(con, path):
+        #         # con.run(f"find {SERVER_STORAGE}/{CURRENT_DIR}/{name} -type f -exec echo Not empty \;")
+        #         con.run(f"rm -rf {path}")
+        #     else:
+        #         print(f"No such directory {path}")
+        # else:
+        #     path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
+        #     if exists(con, path):
+        #         # con.run(f"find {SERVER_STORAGE}/{CURRENT_DIR}/{name} -type f -exec echo Not empty \;")
+        #         con.run(f"rm -rf {path}")
+        #     else:
+        #         print(f"No such directory {path}")
 
 
 def main():

@@ -195,7 +195,12 @@ def move(name, new_loc):
     #     print(f"No such file {name}")
 
 
-def get_dir(name, root):
+def get_dir(name):
+    root = False
+    if name != "" and name[0] == "~":
+        root = True
+        name = name[2::]
+
     if root:
         temp_dir = name
     else:
@@ -205,10 +210,6 @@ def get_dir(name, root):
 
 def diropen(name):
     global CURRENT_DIR
-    root = False
-    if name[0] == "~":
-        root = True
-        name = name[2::]
 
     if name == "back":
         cut = 0
@@ -221,8 +222,7 @@ def diropen(name):
         print(f"Current directory: {path}")
         return
 
-    temp_dir = get_dir(name, root)
-    print(temp_dir)
+    temp_dir = get_dir(name)
     headers = {"dir_path": temp_dir}
     response = requests.get(f"{MASTER_ADDRESS}/diropen", headers=headers)
     datanode = response.json()['datanode']
@@ -245,32 +245,29 @@ def diropen(name):
         print(f"No such directory {path}")
 
 
-
 def dirread(name):
-    root = False
-    if name != "" and name[0] == "~":
-        root = True
-        name = name[2::]
-    datanode = requests.get(f"{MASTER_ADDRESS}/dirread").text
     global CURRENT_DIR
+
+    temp_dir = get_dir(name)
+    headers = {"dir_path": temp_dir}
+    response = requests.get(f"{MASTER_ADDRESS}/dirread", headers=headers)
+    datanode = response.json()['datanode']
+    status = response.status_code
+    if status == "400":
+        print(f"No such directory {temp_dir}")
+        return
     print("Datanode:", datanode)
     con = Connection(host=datanode,
                      user="ubuntu",
                      connect_kwargs={"key_filename": KEY_LOCATION}
                      )
-    if root:
-        path = os.path.join(SERVER_STORAGE, name)
-        if exists(con, f"{path}/"):
-            con.run(f"ls {path}")
-        else:
-            print(f"No such directory {path}")
+    path = os.path.join(SERVER_STORAGE, temp_dir)
+    if exists(con, path):
+        print(f"Directory: {path}")
+        print(f"List of files:")
+        con.run(f"ls {path}")
     else:
-        path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-        print(path)
-        if exists(con, str(path[:-1])):
-            con.run(f"ls {path}")
-        else:
-            print(f"No such directory {path}")
+        print(f"No such directory {path}")
 
 
 def dirmake(name):
@@ -317,7 +314,7 @@ def dirdel(name):
         name = name[2::]
     dir_path = ''
     headers = {'dir_path': dir_path}
-    response = requests.get(f"{MASTER_ADDRESS}/dirdel",headers=headers)
+    response = requests.get(f"{MASTER_ADDRESS}/dirdel", headers=headers)
     datanode = response.json()['datanodes']
     global CURRENT_DIR
     print("Datanode:", datanode)

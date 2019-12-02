@@ -260,19 +260,14 @@ def dirdel():
 @app.route('/dirread')
 def dirread():
     dir_path = request.headers.get('dir_path')
+    datanode = random.choice(datanodes)
+    response = {
+        "datanode": datanode,
+    }
     if not Directory.query.filter_by(path=dir_path).all()[0]:
-        fail_response = {
-            "datanodes": datanodes,
-            "message": 'Directory does not exist'
-        }
-        return json.dumps(fail_response), 400
-    else:
-        response = {
-            "datanodes": datanodes,
-            "message": 'Directory exist'
-        }
-        return json.dumps(response), 200
+        return json.dumps(response), 400
 
+    return json.dumps(response), 200
 
 
 if __name__ == '__main__':

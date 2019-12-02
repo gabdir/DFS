@@ -305,7 +305,10 @@ def dirdel(name):
     if name != "" and name[0] == "~":
         root = True
         name = name[2::]
-    datanode = requests.get(f"{MASTER_ADDRESS}/dirdel").text
+    dir_path = ''
+    headers = {'dir_path': dir_path}
+    response = requests.get(f"{MASTER_ADDRESS}/dirdel",headers=headers)
+    datanode = response.json()['datanodes']
     global CURRENT_DIR
     print("Datanode:", datanode)
     con = Connection(host=datanode,

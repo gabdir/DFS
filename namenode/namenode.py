@@ -15,7 +15,7 @@ from client.client import SERVER_STORAGE
 
 db.create_all()
 
-datanodes = ["ec2-3-134-80-70.us-east-2.compute.amazonaws.com"]
+datanodes = ["ec2-52-15-157-220.us-east-2.compute.amazonaws.com"]
 
 
 def check_main_dir():
@@ -186,7 +186,7 @@ def move(name):
         "message": "Moved to directory"
     }
 
-    return json.dumps(response), 400
+    return json.dumps(response), 200
 
 
 @app.route('/diropen')
@@ -195,10 +195,14 @@ def diropen():
     Does nothing
     :return:
     """
+    datanode = random.choice(datanodes)
     response = {
-        "datanodes": datanodes,
-        "message": 'Directory opened'
+        "datanode": datanode,
     }
+    dir_path = request.headers.get('dir_path')
+    if not Directory.query.filter_by(path=dir_path).first():
+        return json.dumps(response), 400
+
     return json.dumps(response), 200
 
 
@@ -216,7 +220,10 @@ def dirmake(name):
     dir = Directory.query.filter_by(path=dir_path).all()[0]
     if not dir:
         return json.dumps(fail_response), 400
-    path = dir_path + '/' + name
+    if dir_path == "":
+        path = name
+    else:
+        path = dir_path + '/' + name
     new_dir = Directory(path=path)
     db.session.add(new_dir)
     db.session.commit()

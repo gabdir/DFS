@@ -36,7 +36,6 @@ def write(name, creation=False):
             return
     else:
         open(f"{LOCAL_STORAGE}/{name}", "w")
-
     headers = {'size': '0', 'dir_path': CURRENT_DIR}
     response = requests.get(f"{MASTER_ADDRESS}/write/{name}", headers=headers)
     status = response.status_code
@@ -64,7 +63,6 @@ def create(name):
 def read(name):
     headers = {"dir_path": CURRENT_DIR}
     response = requests.get(f"{MASTER_ADDRESS}/read/{name}", headers=headers)
-    print(response.json()['datanode'])
     datanode = response.json()['datanode']
     status = response.status_code
     if status == 400:
@@ -100,7 +98,6 @@ def delete(name):
 
 def info(name):
     response = requests.get(f"{MASTER_ADDRESS}/info/{name}")
-    print(response)
     print(response.json()["message"])
 
 
@@ -187,20 +184,22 @@ def move(name, new_loc):
     # else:
     #     print(f"No such file {name}")
 
+
+def get_dir(name, root):
+    if root:
+        temp_dir = name
+    else:
+        temp_dir = os.path.join(CURRENT_DIR, name)
+    return temp_dir
+
+
 def diropen(name):
+    global CURRENT_DIR
     root = False
     if name[0] == "~":
         root = True
         name = name[2::]
-    response = requests.get(f"{MASTER_ADDRESS}/diropen")
-    datanodes = response.json()['datanodes']
-    datanode = random.choice(datanodes)
-    global CURRENT_DIR
-    print("Datanode:", datanode)
-    con = Connection(host=datanode,
-                     user="ubuntu",
-                     connect_kwargs={"key_filename": KEY_LOCATION}
-                     )
+
     if name == "back":
         cut = 0
         for i in range(len(CURRENT_DIR)):
@@ -211,25 +210,29 @@ def diropen(name):
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
         print(f"Current directory: {path}")
         return
-    # full path written (~/path)
-    if root:
-        path = os.path.join(SERVER_STORAGE, name)
-        if exists(con, path):
-            con.run(f"cd {path}")
-            CURRENT_DIR = name
-            print(f"Current directory: {path}")
 
-        else:
-            print(f"No such directory {path}")
-    # new directory from current one (path or name of dir)
+    temp_dir = get_dir(name, root)
+    print(temp_dir)
+    headers = {"dir_path": temp_dir}
+    response = requests.get(f"{MASTER_ADDRESS}/diropen", headers=headers)
+    datanode = response.json()['datanode']
+    status = response.status_code
+    if status == "400":
+        print(f"No such directory {temp_dir}")
+        return
+    print("Datanode:", datanode)
+    con = Connection(host=datanode,
+                     user="ubuntu",
+                     connect_kwargs={"key_filename": KEY_LOCATION}
+                     )
+
+    path = os.path.join(SERVER_STORAGE, temp_dir)
+    if exists(con, path):
+        con.run(f"cd {path}")
+        CURRENT_DIR = temp_dir
+        print(f"Current directory: {path}")
     else:
-        path = os.path.join(SERVER_STORAGE, CURRENT_DIR, name)
-        if exists(con, path):
-            CURRENT_DIR = os.path.join(CURRENT_DIR, name)
-            con.run(f"cd {path}")
-            print(f"Current directory: {path}")
-        else:
-            print(f"No such directory {path}")
+        print(f"No such directory {path}")
 
 
 

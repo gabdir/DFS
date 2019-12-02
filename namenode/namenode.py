@@ -96,20 +96,15 @@ def info(name):
 
 @app.route('/write/<name>')
 def write(name):
-    fail_response = {
-        "datanodes": datanodes,
-        "message": 'File does not exist'
-    }
     dir_path = request.headers.get('dir_path')
     size = request.headers.get('size')
     dir_id = Directory.query.filter_by(path=dir_path).first().id
     response = {
-        "datanodes": datanodes,
-        "message": 'File has written'
+        "datanodes": datanodes
     }
     if File.query.filter_by(name=name, dir_id=dir_id).first():
         # print(File.query.filter_by(name=name, dir_id=dir_id).first())
-        return json.dumps(fail_response), 400
+        return json.dumps(response), 400
     file = File(name=name, size=size, dir_id=dir_id)
     db.session.add(file)
     db.session.commit()
@@ -122,11 +117,17 @@ def read(name):
     """
     :return: Response(json, 200) where json["datanode"] contains the active datanode
     """
-    datanode = choice_datanode()
+
+    dir_path = request.headers.get('dir_path')
+    dir_id = Directory.query.filter_by(path=dir_path).first().id
+    datanode = random.choice(datanodes)
     response = {
-        "status": 'success',
         "datanode": datanode
     }
+
+    if not File.query.filter_by(name=name, dir_id=dir_id).first():
+        return json.dumps(response), 400
+
     return json.dumps(response), 200
 
 
@@ -185,7 +186,7 @@ def move(name):
         "message": "Moved to directory"
     }
 
-    return json.dumps(response), 400
+    return json.dumps(response), 200
 
 
 @app.route('/diropen')
@@ -194,10 +195,14 @@ def diropen():
     Does nothing
     :return:
     """
+    datanode = random.choice(datanodes)
     response = {
-        "datanodes": datanodes,
-        "message": 'Directory opened'
+        "datanode": datanode,
     }
+    dir_path = request.headers.get('dir_path')
+    if not Directory.query.filter_by(path=dir_path).first():
+        return json.dumps(response), 400
+
     return json.dumps(response), 200
 
 
@@ -215,7 +220,10 @@ def dirmake(name):
     dir = Directory.query.filter_by(path=dir_path).all()[0]
     if not dir:
         return json.dumps(fail_response), 400
-    path = dir_path + '/' + name
+    if dir_path == "":
+        path = name
+    else:
+        path = dir_path + '/' + name
     new_dir = Directory(path=path)
     db.session.add(new_dir)
     db.session.commit()

@@ -9,7 +9,7 @@ import json
 
 USERNAME = pwd.getpwuid(os.getuid())[0]
 
-MASTER_ADDRESS = 'http://127.0.0.2:5000'
+MASTER_ADDRESS = 'http://172.17.0.9:5000'
 KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
 LOCAL_STORAGE = os.getcwd() + "/storage"
 SERVER_STORAGE = '/home/ubuntu/storage'

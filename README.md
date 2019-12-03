@@ -11,8 +11,20 @@
 
 
 ## Running
-TODO
-
+* #Namenode running
+  `cd namenode`
+  `docker build -t dfs_namenode .` Building an image
+  `docker run dfs_namenode`  Running an image
+  After that we need to configure ip address of the container for the client typing the command:
+  `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container id>`
+  To discover the id of container type:
+  `docker container ls`
+ * #Client running
+   `cd client`
+   `docker build -t dfs_client .`  Building an image
+   `docker run -ti dfs_client`  Running an image
+  The type usage commands
+   
 ## Usage
 On client:
 * `init` Initialize the client storage on a new system (removes any existing file in the dfs root directory and return available size).

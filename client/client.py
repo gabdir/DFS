@@ -1,16 +1,16 @@
-import random
+
 
 import requests
 import pwd
 import os
 from fabric import Connection
 from patchwork.files import exists
-import json
 
-USERNAME = pwd.getpwuid(os.getuid())[0]
+#
+# USERNAME = pwd.getpwuid(os.getuid())[0]
 
 MASTER_ADDRESS = 'http://127.0.0.2:5000'
-KEY_LOCATION = f"/home/{USERNAME}/new_key.pem"
+KEY_LOCATION = "my_key.pem"
 LOCAL_STORAGE = os.getcwd() + "/storage"
 SERVER_STORAGE = '/home/ubuntu/storage'
 CURRENT_DIR = ""
@@ -47,15 +47,15 @@ def write(name, creation=False):
         return
     datanodes = response.json()['datanodes']
     for datanode in datanodes:
-        print(datanode)
+        print("Datanode:", datanode)
         con = Connection(host=datanode,
                          user="ubuntu",
                          connect_kwargs={"key_filename": KEY_LOCATION}
                          )
         path = os.path.join(SERVER_STORAGE, CURRENT_DIR)
         con.put(f"{LOCAL_STORAGE}/{name}", path)
-        if creation:
-            os.remove(f"{LOCAL_STORAGE}/{name}")
+    if creation:
+        os.remove(f"{LOCAL_STORAGE}/{name}")
 
 
 def create(name):
@@ -115,12 +115,10 @@ def move(name, new_loc, copy=False):
         response = requests.get(f"{MASTER_ADDRESS}/copy/{name}", headers=headers)
     else:
         response = requests.get(f"{MASTER_ADDRESS}/move/{name}", headers=headers)
-    print(response.json())
     datanodes = response.json()['datanodes']
-    print(datanodes)
     message = response.json()['message']
     status = response.status_code
-    if status == "400":
+    if status == 400:
         print(message)
         return
     for datanode in datanodes:
@@ -162,6 +160,8 @@ def get_dir_for_file(name):
                 cut = i
         temp_to_cur = name[:cut]
         temp_dir = os.path.join(CURRENT_DIR, temp_to_cur)
+        if cut == 0:
+            temp_dir = temp_dir[:-1]
     return temp_dir
 
 
@@ -201,7 +201,7 @@ def diropen(name):
     response = requests.get(f"{MASTER_ADDRESS}/diropen", headers=headers)
     datanode = response.json()['datanode']
     status = response.status_code
-    if status == "400":
+    if status == 400:
         print(f"No such directory {temp_dir}")
         return
     print("Datanode:", datanode)
@@ -226,7 +226,7 @@ def dirread(name):
     response = requests.get(f"{MASTER_ADDRESS}/dirread", headers=headers)
     datanode = response.json()['datanode']
     status = response.status_code
-    if status == "400":
+    if status == 400:
         print(f"No such directory {temp_dir}")
         return
     print("Datanode:", datanode)
@@ -237,7 +237,7 @@ def dirread(name):
     path = os.path.join(SERVER_STORAGE, temp_dir)
     if exists(con, path):
         print(f"Directory: {path}")
-        print(f"List of files:")
+        print(f"List of files and directories:")
         con.run(f"ls {path}")
     else:
         print(f"No such directory {path}")
@@ -254,12 +254,12 @@ def dirmake(name):
     only_name = name[(cut+1):]
     headers = {"dir_path": path_without, "dir_with_current": path_with_current}
     response = requests.get(f"{MASTER_ADDRESS}/dirmake/{only_name}", headers=headers)
-    datanodes = response.json()['datanodes']
     status = response.status_code
     message = response.json()["message"]
-    if status == "400":
+    if status == 400:
         print(message)
         return
+    datanodes = response.json()['datanodes']
     for datanode in datanodes:
         print("Datanode:", datanode)
         con = Connection(host=datanode,
@@ -285,7 +285,7 @@ def dirdel(name):
     datanodes = response.json()['datanodes']
     status = response.status_code
     message = response.json()['message']
-    if status == "400":
+    if status == 400:
         print(message)
         return
     for datanode in datanodes:
@@ -318,6 +318,8 @@ def main():
         ● Delete directory​ (dir). Should allow to delete directory. If the directory contains files
           the system should ask for confirmation from the user before deletion.
     """
+    global MASTER_ADDRESS
+    MASTER_ADDRESS = input('datanode ip:').strip()
     while True:
         s = input().split()
         command = s[0]
@@ -347,7 +349,7 @@ def main():
         else:
             func, args = functions[command]
             func(*args)
-        print(f"DONE: `{' '.join(s)}`\n")
+        print(f"Executed: `{' '.join(s)}`\n")
 
 
 if __name__ == "__main__":

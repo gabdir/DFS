@@ -9,12 +9,14 @@ from os import system, mkdir, listdir
 from random import choice
 import random
 from shutil import rmtree
+from fabric import Connection
 
 SERVER_STORAGE = '/home/ubuntu/storage'
 
 db.create_all()
 
-datanodes = ["ec2-52-15-157-220.us-east-2.compute.amazonaws.com"]
+# datanodes = ["ec2-52-15-157-220.us-east-2.compute.amazonaws.com", "ec2-18-224-14-164.us-east-2.compute.amazonaws.com", "ec2-3-17-190-79.us-east-2.compute.amazonaws.com"]
+datanodes = get_instances()
 
 
 def check_main_dir():
@@ -41,10 +43,20 @@ def check_datanode_failure():
     if "storage" in listdir():
         rmtree("storage")
     mkdir("storage")
+    print("1")
     system(f'scp -i "my_key.pem" -r ubuntu@{src}:{SERVER_STORAGE} storage')
+    print("after")
     for trg in difference:
+        print(f'scp -i "my_key.pem" -r storage/storage ubuntu@{trg}:/home/ubuntu')
+        # con = Connection(host=trg,
+        #                  user="ubuntu",
+        #                  connect_kwargs={"key_filename": 'my_key.pem'}
+        #                  )
+        # con.run(f"scp ")
+        system(f"ssh -o StrictHostKeyChecking=no ubuntu@{trg}")
         system(f'scp -i "my_key.pem" -r storage/storage ubuntu@{trg}:/home/ubuntu')
-    datanodes = new_datanodes
+
+    datanodes = list(new_datanodes)
 
 
 @app.route('/init')
@@ -308,6 +320,5 @@ if __name__ == '__main__':
     if not Directory.query.filter_by(path="").first():
         db.session.add(Directory(path=""))
         db.session.commit()
-    print(bool(Directory.query.filter_by(path="").first()))
     check_main_dir()
     app.run("127.0.0.2")

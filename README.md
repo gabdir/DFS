@@ -11,19 +11,19 @@
 
 
 ## Running
-* #Namenode running
-  `cd namenode`
-  `docker build -t dfs_namenode .` Building an image
-  `docker run dfs_namenode`  Running an image
-  After that we need to configure ip address of the container for the client typing the command:
-  `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container id>`
-  To discover the id of container type:
-  `docker container ls`
- * #Client running
-   `cd client`
-   `docker build -t dfs_client .`  Building an image
-   `docker run -ti dfs_client`  Running an image
-  The type usage commands
+* ##Namenode running
+  1. `cd namenode`
+  2. `docker build -t dfs_namenode .` Building an image
+  3. `docker run dfs_namenode`  Running an image
+  4. After that we need to configure ip address of the container for the client typing the command:
+  *  `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container id>`
+  5. To discover the id of container type:
+  * `docker container ls`
+* ##Client running
+  1. `cd client`
+  2. `docker build -t dfs_client .`  Building an image
+  3. `docker run -ti dfs_client`  Running an image
+  Then you can type usage commands
    
 ## Usage
 On client:

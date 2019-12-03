@@ -9,13 +9,11 @@ from os import system, mkdir, listdir
 from random import choice
 import random
 from shutil import rmtree
-from fabric import Connection
 
 SERVER_STORAGE = '/home/ubuntu/storage'
 
 db.create_all()
 
-# datanodes = ["ec2-52-15-157-220.us-east-2.compute.amazonaws.com", "ec2-18-224-14-164.us-east-2.compute.amazonaws.com", "ec2-3-17-190-79.us-east-2.compute.amazonaws.com"]
 datanodes = get_instances()
 
 

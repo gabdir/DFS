@@ -22,5 +22,6 @@ pip-selfcheck.json
 .idea/vcs.xml
 
 new_key.pem
+my_key.pem
 /namenode/storage/
 /storage/

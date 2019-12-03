@@ -1,13 +1,7 @@
-
-
 import requests
-import pwd
 import os
 from fabric import Connection
 from patchwork.files import exists
-
-#
-# USERNAME = pwd.getpwuid(os.getuid())[0]
 
 MASTER_ADDRESS = 'http://127.0.0.2:5000'
 KEY_LOCATION = "my_key.pem"
@@ -244,14 +238,13 @@ def dirread(name):
 
 
 def dirmake(name):
-
     path_without = get_dir_for_file(name)
     path_with_current = get_dir(name)
     cut = 0
     for i in range(len(name)):
         if name[i] == "/":
             cut = i
-    only_name = name[(cut+1):]
+    only_name = name[(cut + 1):]
     headers = {"dir_path": path_without, "dir_with_current": path_with_current}
     response = requests.get(f"{MASTER_ADDRESS}/dirmake/{only_name}", headers=headers)
     status = response.status_code
